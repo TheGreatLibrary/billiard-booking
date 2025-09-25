@@ -9,7 +9,6 @@ class RoleSeeder extends Seeder {
     public function run(): void {
         DB::table('roles')->upsert([
             ['name' => 'admin'],
-            ['name' => 'manager'],
             ['name' => 'customer'],
         ], ['name']);
     }
