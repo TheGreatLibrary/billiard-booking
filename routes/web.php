@@ -34,7 +34,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // CRUD маршруты для админки
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::resource('/users', UserController::class);
-        Route::resource('/bookings', AdminBookingController::class);
+        Route::resource('/bookings', BookingController::class);
         Route::resource('/orders', OrderController::class);
         Route::resource('/payments', PaymentController::class);
     });
