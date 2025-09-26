@@ -52,9 +52,14 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class);
     }
+    
 
-    public function isAdmin(): bool
-    {
-        return $this->roles()->where('name', 'admin')->exists();
-    }
+// app/Models/User.php
+public function hasRole(string|array $names): bool
+{
+    $names = (array) $names; // если передана строка — превращаем в массив
+    return $this->roles->pluck('name')->intersect($names)->isNotEmpty();
+}
+
+
 }

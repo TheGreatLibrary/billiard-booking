@@ -14,8 +14,11 @@ class AdminMiddleware
             return redirect('/login');
         }
 
-        if (!auth()->user()->isAdmin()) {
-            abort(403, 'Доступ запрещен. Требуются права администратора.');
+        $user = auth()->user();
+
+        // Разрешаем доступ админам и модераторам
+        if (! $user->hasRole(['admin', 'moderator'])) {
+            abort(403, 'Доступ запрещен. Требуются права администратора или модератора.');
         }
 
         return $next($request);

@@ -1,11 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\PaymentController;
+
 Route::view('/', 'welcome');
 
+// Публичные маршруты для обычных пользователей
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
@@ -14,30 +19,36 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-// 👇 ВРЕМЕННО - простые маршруты для тестирования
-// Добавьте после существующих маршрутов
+// Маршруты бронирований для обычных пользователей
 Route::middleware(['auth'])->group(function () {
-    Route::resource('bookings', \App\Http\Controllers\BookingController::class);
+    Route::resource('bookings', BookingController::class);
 });
 
-Route::prefix('admin')->name('admin.')->group(function () {
+
+// 👇 ЕДИНЫЙ БЛОК АДМИНСКИХ МАРШРУТОВ
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     // Главная страница админки
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware(['auth', 'admin'])
-        ->name('dashboard');
 
-    // Статистика API
-    Route::get('/stats', [DashboardController::class, 'stats'])
-        ->middleware(['auth', 'admin'])
-        ->name('stats');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/stats', [DashboardController::class, 'stats'])->name('stats');
+    Route::get('/payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
 
-    // CRUD маршруты для админки
-    Route::middleware(['auth', 'admin'])->group(function () {
-        Route::resource('/users', UserController::class);
-        Route::resource('/bookings', BookingController::class);
-        Route::resource('/orders', OrderController::class);
-        Route::resource('/payments', PaymentController::class);
-    });
+
+
+    // Все CRUD маршруты для админки
+    Route::resource('/users', UserController::class);
+    Route::resource('/bookings', AdminBookingController::class);
+    Route::resource('/orders', OrderController::class);
+    Route::resource('/payments', PaymentController::class);
+
+
+
+    // Дополнительные маршруты изменения статусов
+    Route::post('/bookings/{booking}/change-status', [AdminBookingController::class, 'changeStatus'])
+        ->name('bookings.change-status');
+    Route::post('/orders/{order}/change-status', [OrderController::class, 'changeStatus'])
+        ->name('orders.change-status');
 });
+
 
 require __DIR__.'/auth.php';
