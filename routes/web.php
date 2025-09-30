@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\PriceRuleController;
 
 Route::view('/', 'welcome');
 
@@ -36,10 +37,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
 
     // Все CRUD маршруты для админки
-    Route::resource('/users', UserController::class);
-    Route::resource('/bookings', AdminBookingController::class);
-    Route::resource('/orders', OrderController::class);
-    Route::resource('/payments', PaymentController::class);
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    Route::resource('bookings', App\Http\Controllers\Admin\BookingController::class);
+    Route::resource('orders', App\Http\Controllers\Admin\OrderController::class);
+    Route::resource('payments', App\Http\Controllers\Admin\PaymentController::class);
+    Route::resource('product-types', App\Http\Controllers\Admin\ProductTypeController::class);
+    Route::resource('product-models', App\Http\Controllers\Admin\ProductModelController::class);
+    Route::resource('places', App\Http\Controllers\Admin\PlaceController::class);
+    Route::resource('zones', App\Http\Controllers\Admin\ZoneController::class);
+    Route::resource('price_rules', App\Http\Controllers\Admin\PriceRuleController::class);
+    Route::resource('resources', App\Http\Controllers\Admin\ResourceController::class);
+
 
 
 

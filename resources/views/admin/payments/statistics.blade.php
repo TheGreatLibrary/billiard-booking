@@ -2,9 +2,17 @@
 
 @section('title', 'Статистика платежей')
 
-@section('content')
-<h1 class="text-2xl font-bold mb-6">📊 Статистика платежей</h1>
 
+@section('content')
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">📊 Статистика платежей</h1>
+
+    {{-- 🔙 Кнопка возврата --}}
+    <a href="{{ route('admin.payments.index') }}"
+       class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded">
+        ⬅️ Назад к платежам
+    </a>
+</div>
 {{-- Общие цифры --}}
 <div class="grid grid-cols-3 gap-4 mb-8">
     <div class="bg-white shadow rounded p-4 text-center">

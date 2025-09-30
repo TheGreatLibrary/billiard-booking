@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -136,23 +137,54 @@ class PaymentController extends Controller
      */
     public function statistics()
     {
-        $today = now()->format('Y-m-d');
-        $weekAgo = now()->subDays(7)->format('Y-m-d');
-        $monthAgo = now()->subDays(30)->format('Y-m-d');
-
-        $stats = [
-            'today' => Payment::whereDate('created_at', $today)
-                        ->where('status', 'completed')
-                        ->sum('amount') ?? 0,
-            'week' => Payment::whereDate('created_at', '>=', $weekAgo)
-                        ->where('status', 'completed')
-                        ->sum('amount') ?? 0,
-            'month' => Payment::whereDate('created_at', '>=', $monthAgo)
-                        ->where('status', 'completed')
-                        ->sum('amount') ?? 0,
-            'total' => Payment::where('status', 'completed')->sum('amount') ?? 0,
+        // === Общие цифры ===
+        $total = [
+            'count'   => Payment::count(),
+            'amount'  => Payment::sum('amount') / 100, // в рублях
+            'average' => Payment::count() > 0
+                ? Payment::avg('amount') / 100
+                : 0,
         ];
 
-        return view('admin.payments.statistics', compact('stats'));
+        // === Разбивка по статусам ===
+        $byStatusRaw = Payment::select(
+                'status',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(amount) as amount')
+            )
+            ->groupBy('status')
+            ->get();
+
+        $byStatus = $byStatusRaw->mapWithKeys(function ($row) {
+            return [
+                $row->status => [
+                    'count'  => $row->count,
+                    'amount' => $row->amount / 100,
+                ]
+            ];
+        });
+
+        // === Разбивка по месяцам === (SQLite -> strftime)
+        $monthlyRaw = Payment::select(
+                DB::raw("strftime('%Y-%m', paid_at) as month"),
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(amount) as amount')
+            )
+            ->whereNotNull('paid_at')
+            ->groupBy('month')
+            ->orderBy('month', 'desc')
+            ->limit(12)
+            ->get();
+
+        $monthly = $monthlyRaw->mapWithKeys(function ($row) {
+            return [
+                $row->month => [
+                    'count'  => $row->count,
+                    'amount' => $row->amount / 100,
+                ]
+            ];
+        });
+
+        return view('admin.payments.statistics', compact('total','byStatus','monthly'));
     }
 }
