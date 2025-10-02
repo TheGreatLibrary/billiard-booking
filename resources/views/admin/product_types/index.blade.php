@@ -10,9 +10,9 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <table class="table table-bordered">
+    <table class="table-auto w-full mt-4 border">
         <thead>
-            <tr>
+            <tr class='bg-gray-100'>
                 <th>ID</th>
                 <th>Название</th>
                 <th width="180">Действия</th>

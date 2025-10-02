@@ -11,11 +11,11 @@
     <div class="flex space-x-2">
         <a href="{{ route('admin.payments.create') }}" 
            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-            ➕ Новый платеж
+             Новый платеж
         </a>
         <a href="{{ route('admin.payments.statistics') }}" 
            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
-            📊 Статистика
+             Статистика
         </a>
     </div>
 </div>

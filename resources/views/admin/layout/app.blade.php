@@ -24,7 +24,7 @@
                         <span class="text-gray-700">Администратор: {{ auth()->user()->name }}</span>
                         <form method="POST" action="/logout" class="inline">
                             @csrf
-                            <button type="submit" class="text-red-500 hover:text-red-700 font-medium">🚪 Выйти</button>
+                            <button type="submit" class="text-red-500 hover:text-red-700 font-medium"> Выйти</button>
                         </form>
                     </div>
                 </div>
@@ -34,13 +34,13 @@
             <main class="p-6">
                 @if(session('success'))
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-                        ✅ {{ session('success') }}
+                         {{ session('success') }}
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-                        ❌ {{ session('error') }}
+                         {{ session('error') }}
                     </div>
                 @endif
 
