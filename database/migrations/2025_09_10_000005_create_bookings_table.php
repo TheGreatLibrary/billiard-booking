@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('place_id')->constrained('places')->restrictOnDelete();
             $table->string('starts_at'); // ISO8601 текстом для SQLite
             $table->string('ends_at');

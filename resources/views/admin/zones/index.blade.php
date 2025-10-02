@@ -23,10 +23,10 @@
                 <td class="border px-2 py-1">{{ $zone->place->name ?? '' }}</td>
                 <td class="border px-2 py-1">{{ $zone->price_coef }}</td>
                 <td class="border px-2 py-1 text-right">
-                    <a href="{{ route('admin.zones.edit',$zone) }}" class="text-blue-600">✏️</a>
-                    <form action="{{ route('admin.zones.destroy',$zone) }}" method="POST" class="inline">
+                    <a href="{{ route('admin.zones.edit',$zone) }}" class="btn btn-sm btn-warning">✏️</a>
+                    <form action="{{ route('admin.zones.destroy',$zone) }}" method="POST" class="d-inline">
                         @csrf @method('DELETE')
-                        <button class="text-red-600" onclick="return confirm('Удалить?')">🗑</button>
+                        <button class="btn btn-sm btn-danger" onclick="return confirm('Удалить?')">🗑</button>
                     </form>
                 </td>
             </tr>
