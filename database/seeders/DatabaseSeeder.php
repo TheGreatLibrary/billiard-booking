@@ -15,9 +15,18 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             ProductTypeSeeder::class,
+            PlaceSeeder::class,
+            ZoneSeeder::class,
+
+            ProductModelSeeder::class,
+            StateProductSeeder::class,
+            ResourceSeeder::class,
+
+            PriceRuleSeeder::class,
         ]);
 
         // ⚠️ ВАЖНО: НЕ вызывать User::factory(…) тут — именно это и сыпало ошибку
+
 
         // создаём админа с телефоном
         DB::table('users')->updateOrInsert(

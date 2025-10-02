@@ -13,7 +13,7 @@ return new class extends Migration {
 
         Schema::create('product_models', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_type_id')->constrained('product_types')->restrictOnDelete();
+            $table->foreignId('product_type_id')->constrained('product_types')->cascadeOnDelete(); 
             $table->string('name');
             $table->integer('base_price_hour')->nullable(); // руб*100; для equipment можно NULL
             $table->integer('base_price_each')->nullable(); // для equipment
@@ -27,10 +27,10 @@ return new class extends Migration {
 
         Schema::create('resources', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('model_id')->constrained('product_models')->restrictOnDelete();
-            $table->foreignId('zone_id')->constrained('zones')->restrictOnDelete();
+            $table->foreignId('model_id')->constrained('product_models')->cascadeOnDelete(); 
+            $table->foreignId('zone_id')->constrained('zones')->cascadeOnDelete(); 
             $table->string('code')->nullable(); // "A-05"
-            $table->foreignId('state_id')->constrained('state_product')->restrictOnDelete();
+            $table->foreignId('state_id')->constrained('state_product')->cascadeOnDelete(); 
             $table->text('note')->nullable();
 
             $table->index('zone_id');
