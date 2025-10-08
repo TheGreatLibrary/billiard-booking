@@ -45,7 +45,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('product-models', App\Http\Controllers\Admin\ProductModelController::class);
     Route::resource('places', App\Http\Controllers\Admin\PlaceController::class);
     Route::resource('zones', App\Http\Controllers\Admin\ZoneController::class);
-    Route::resource('price_rules', App\Http\Controllers\Admin\PriceRuleController::class);
+    Route::resource('price-rules', App\Http\Controllers\Admin\PriceRuleController::class);
     Route::resource('resources', App\Http\Controllers\Admin\ResourceController::class);
 
 

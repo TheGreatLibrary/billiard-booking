@@ -34,8 +34,8 @@
             <td class="border px-2 py-1">{{ $rule->value }}</td>
             <td class="border px-2 py-1">{{ $rule->active ? '✅' : '❌' }}</td>
             <td class="border px-2 py-1 text-right">
-                <a href="{{ route('admin.price_rules.edit',$rule) }}" class="text-blue-600">✏️</a>
-                <form action="{{ route('admin.price_rules.destroy',$rule) }}" method="POST" class="inline">
+                <a href="{{ route('admin.price-rules.edit',$rule) }}" class="text-blue-600">✏️</a>
+                <form action="{{ route('admin.price-rules.destroy',$rule) }}" method="POST" class="inline">
                     @csrf @method('DELETE')
                     <button class="text-red-600" onclick="return confirm('Удалить?')">🗑</button>
                 </form>
