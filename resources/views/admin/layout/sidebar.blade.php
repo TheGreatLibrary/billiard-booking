@@ -9,6 +9,10 @@
         <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Главное</div>
         <a href="{{ route('admin.dashboard') }}"
            class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
+            Админ Дашборд
+        </a>
+        <a href="{{ route('dashboard') }}"
+           class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('dashboard') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Дашборд
         </a>
 
