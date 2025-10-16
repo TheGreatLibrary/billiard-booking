@@ -35,7 +35,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
 
 
-
+Route::resource('bookings', App\Http\Controllers\Admin\BookingController::class);
+    
+    // Добавьте эти маршруты для AJAX
+    Route::get('/bookings/zones/{place}', [App\Http\Controllers\Admin\BookingController::class, 'getZones'])
+        ->name('bookings.zones');
+    Route::get('/bookings/tables/{zone}', [App\Http\Controllers\Admin\BookingController::class, 'getTables'])
+        ->name('bookings.tables');
     // Все CRUD маршруты для админки
     Route::resource('users', App\Http\Controllers\Admin\UserController::class);
     Route::resource('bookings', App\Http\Controllers\Admin\BookingController::class);
@@ -57,6 +63,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/orders/{order}/change-status', [OrderController::class, 'changeStatus'])
         ->name('orders.change-status');
 });
+
 
 
 require __DIR__.'/auth.php';

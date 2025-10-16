@@ -1,11 +1,13 @@
 <?php
-// app/Http/Controllers/Admin/BookingController.php
+// app/Http\Controllers\Admin\BookingController.php
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\User;
 use App\Models\Place;
+use App\Models\Zone;
+use App\Models\Resource;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -28,9 +30,11 @@ class BookingController extends Controller
     public function create()
     {
         $users = User::all();
-        $places = Place::where('is_available', true)->get();
+        $places = Place::all();
+        $zones = collect();
+        $tables = collect();
         
-        return view('admin.bookings.create', compact('users', 'places'));
+        return view('admin.bookings.create', compact('users', 'places', 'zones', 'tables'));
     }
 
     /**
@@ -41,8 +45,10 @@ class BookingController extends Controller
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'place_id' => 'required|exists:places,id',
-            'start_time' => 'required|date|after:now',
-            'end_time' => 'required|date|after:start_time',
+            'zone_id' => 'required|exists:zones,id',
+            'resource_id' => 'required|exists:resources,id',
+            'starts_at' => 'required|date|after:now', // исправлено на starts_at
+            'ends_at' => 'required|date|after:starts_at',
             'status' => 'required|in:pending,confirmed,canceled,completed',
             'notes' => 'nullable|string|max:500',
         ]);
@@ -54,67 +60,58 @@ class BookingController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Get zones by place ID (AJAX)
      */
-    public function show(Booking $booking)
+    public function getZones(Place $place)
     {
-        $booking->load(['user', 'place', 'resources']);
-        return view('admin.bookings.show', compact('booking'));
+        try {
+            $zones = Zone::where('place_id', $place->id)->get();
+            return response()->json($zones);
+        } catch (\Exception $e) {
+            return response()->json([], 500);
+        }
     }
 
+
+
+
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Booking $booking)
-    {
-        $users = User::all();
-        $places = Place::where('is_available', true)->get();
+
+ * Get tables by zone ID (AJAX)
+ */
+ public function getTables(Zone $zone)
+{
+    try {
+        \Log::info('Loading tables for zone: ' . $zone->id);
         
-        return view('admin.bookings.edit', compact('booking', 'users', 'places'));
+        // Простой запрос как вы сказали
+        $tables = Resource::join('product_models', 'resources.model_id', '=', 'product_models.id')
+            ->where('resources.zone_id', $zone->id)
+            ->where('resources.state_id', 1) // active
+            ->select(
+                'resources.id',
+                'resources.code as name', 
+                'resources.note',
+                'product_models.name as model_name'
+            )
+            ->get()
+            ->map(function($table) {
+                return [
+                    'id' => $table->id,
+                    'name' => $table->name ?: $table->model_name,
+                    'description' => $table->model_name . ' - ' . ($table->note ?: 'Стол для бильярда')
+                ];
+            });
+            
+        \Log::info('Found tables: ' . json_encode($tables));
+        return response()->json($tables);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error loading tables: ' . $e->getMessage());
+        return response()->json([], 500);
     }
+}
+    // ... остальные методы остаются без изменений
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Booking $booking)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'place_id' => 'required|exists:places,id',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
-            'status' => 'required|in:pending,confirmed,canceled,completed',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
-        $booking->update($request->all());
-
-        return redirect()->route('admin.bookings.show', $booking)
-            ->with('success', 'Бронирование обновлено успешно!');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Booking $booking)
-    {
-        $booking->delete();
-
-        return redirect()->route('admin.bookings.index')
-            ->with('success', 'Бронирование удалено успешно!');
-    }
-
-    /**
-     * Change booking status
-     */
-    public function changeStatus(Booking $booking, Request $request)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,confirmed,canceled,completed'
-        ]);
-
-        $booking->update(['status' => $request->status]);
-
-        return back()->with('success', 'Статус бронирования изменен!');
-    }
+    
 }

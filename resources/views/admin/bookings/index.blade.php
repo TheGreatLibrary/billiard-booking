@@ -57,8 +57,8 @@
                         <span class="text-sm text-gray-900">{{ $booking->place->name ?? 'N/A' }}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">{{ $booking->start_time->format('d.m.Y H:i') }}</div>
-                        <div class="text-sm text-gray-500">{{ $booking->end_time->format('H:i') }}</div>
+                        <div class="text-sm text-gray-900">{{ $booking->starts_at}}</div>
+                        <div class="text-sm text-gray-500">{{ $booking->ends_at}}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
