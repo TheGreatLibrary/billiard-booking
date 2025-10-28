@@ -9,6 +9,7 @@ use App\Models\Place;
 use App\Models\Zone;
 use App\Models\Resource;
 use App\Models\BookingResource;
+use App\Models\ProductModel;
 use App\Models\PriceRule;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -53,15 +54,19 @@ class BookingController extends Controller
         'user_id' => 'required|exists:users,id',
         'place_id' => 'required|exists:places,id',
         'zone_id' => 'required|exists:zones,id',
-        'resource_id' => 'required|exists:resources,id',
+        'resource_ids' => 'required|array|min:1', // МАССИВ столов
+        'resource_ids.*' => 'exists:resources,id',
         'starts_at' => 'required|date|after:now',
         'ends_at' => 'required|date|after:starts_at',
         'status' => 'required|in:pending,confirmed,canceled,finished,no_show',
         'notes' => 'nullable|string|max:500',
+        'equipment' => 'nullable|array',
+        'equipment.*.model_id' => 'required|exists:product_models,id',
+        'equipment.*.qty' => 'required|integer|min:1',
     ]);
 
     try {
-        \DB::beginTransaction();
+        DB::beginTransaction();
 
         // 1. Создаём бронирование
         $booking = Booking::create([
@@ -73,79 +78,111 @@ class BookingController extends Controller
             'comment' => $validated['notes'] ?? null,
         ]);
 
-        // 2. Получаем данные для расчёта цены
-        $resource = Resource::with(['model', 'zone'])->findOrFail($validated['resource_id']);
-        $startsAt = \Carbon\Carbon::parse($validated['starts_at']);
-        $endsAt = \Carbon\Carbon::parse($validated['ends_at']);
+        $startsAt = Carbon::parse($validated['starts_at']);
+        $endsAt = Carbon::parse($validated['ends_at']);
         $minutes = $startsAt->diffInMinutes($endsAt);
 
-        // 3. Находим подходящее ценовое правило
+        // Находим ценовое правило один раз
         $priceRule = $this->findPriceRule(
             $validated['place_id'],
             $validated['zone_id'],
             $startsAt
         );
 
-        // 4. Рассчитываем цену (всё в РУБЛЯХ, только целые числа)
-        $basePrice = (int) $resource->model->base_price_hour; // цена за час в рублях
-        $zoneCoef = (float) $resource->zone->price_coef;
-        
-        if ($priceRule) {
-            $ruleKind = $priceRule->kind;
-            $ruleValue = (float) $priceRule->value;
-        } else {
-            $ruleKind = 'coef';
-            $ruleValue = 1.0;
+        $ruleKind = $priceRule ? $priceRule->kind : 'coef';
+        $ruleValue = $priceRule ? (float) $priceRule->value : 1.0;
+
+        $totalAmount = 0;
+        $bookingResources = [];
+
+        // 2. Создаём booking_resource для КАЖДОГО стола
+        foreach ($validated['resource_ids'] as $resourceId) {
+            $resource = Resource::with(['model', 'zone'])->findOrFail($resourceId);
+
+            $basePrice = (int) $resource->model->base_price_hour;
+            $zoneCoef = (float) $resource->zone->price_coef;
+
+            // Рассчитываем цену за этот стол
+            if ($ruleKind === 'coef') {
+                $hourPrice = $basePrice * $zoneCoef * $ruleValue;
+            } else {
+                $hourPrice = $ruleValue;
+            }
+
+            $amount = (int) round(($hourPrice / 60) * $minutes);
+            $totalAmount += $amount;
+
+            // Создаём запись booking_resource
+            $bookingResource = $booking->bookingResources()->create([
+                'resource_id' => $resourceId,
+                'starts_at' => $validated['starts_at'],
+                'ends_at' => $validated['ends_at'],
+                'hour_price_snapshot' => $basePrice,
+                'rule_kind' => $ruleKind,
+                'rule_value' => $ruleValue,
+                'zone_coef_snapshot' => $zoneCoef,
+                'minutes' => $minutes,
+                'amount' => $amount,
+            ]);
+
+            $bookingResources[] = $bookingResource;
         }
 
-        // Считаем итоговую цену за час
-        if ($ruleKind === 'coef') {
-            $hourPrice = $basePrice * $zoneCoef * $ruleValue;
-        } else { // override
-            $hourPrice = $ruleValue;
-        }
-
-        // ОКРУГЛЯЕМ ДО ЦЕЛОГО
-        $amount = (int) round(($hourPrice / 60) * $minutes);
-
-        // 5. Создаём booking_resource
-        $bookingResource = $booking->bookingResources()->create([
-            'resource_id' => $validated['resource_id'],
-            'starts_at' => $validated['starts_at'],
-            'ends_at' => $validated['ends_at'],
-            'hour_price_snapshot' => $basePrice,
-            'rule_kind' => $ruleKind,
-            'rule_value' => $ruleValue,
-            'zone_coef_snapshot' => $zoneCoef,
-            'minutes' => $minutes,
-            'amount' => $amount,
-        ]);
-
-        // 6. Создаём заказ
+        // 3. Создаём заказ
         $order = $booking->order()->create([
             'user_id' => $validated['user_id'],
             'place_id' => $validated['place_id'],
-            'total_amount' => $amount,
+            'total_amount' => $totalAmount, // пока только столы
         ]);
 
-        // 7. Создаём позицию заказа для стола
-        $order->items()->create([
-            'type' => 'table_time',
-            'booking_resource_id' => $bookingResource->id,
-            'qty' => 1,
-            'price_each' => null,
-            'amount' => $amount,
-        ]);
+        // 4. Создаём order_items для столов (type = 'table_time')
+        foreach ($bookingResources as $br) {
+            $order->items()->create([
+                'type' => 'table_time',
+                'booking_resource_id' => $br->id,
+                'qty' => 1,
+                'price_each' => null,
+                'amount' => $br->amount,
+            ]);
+        }
 
-        \DB::commit();
+        // 5. Добавляем оборудование (type = 'equipment')
+        if (!empty($validated['equipment'])) {
+            foreach ($validated['equipment'] as $equipmentData) {
+                if (empty($equipmentData['model_id'])) {
+                    continue; // пропускаем пустые строки
+                }
+
+                $productModel = ProductModel::findOrFail($equipmentData['model_id']);
+                $qty = (int) $equipmentData['qty'];
+                $priceEach = (int) $productModel->base_price_hour;
+                $equipmentAmount = $priceEach * $qty;
+
+                $order->items()->create([
+                    'type' => 'equipment',
+                    'booking_resource_id' => null,
+                    'product_model_id' => $equipmentData['model_id'],
+                    'qty' => $qty,
+                    'price_each' => $priceEach,
+                    'amount' => $equipmentAmount,
+                ]);
+
+                $totalAmount += $equipmentAmount;
+            }
+
+            // Обновляем общую сумму заказа
+            $order->update(['total_amount' => $totalAmount]);
+        }
+
+        DB::commit();
 
         return redirect()->route('admin.bookings.index')
-            ->with('success', "Бронирование создано! Сумма: {$amount} ₽");
+            ->with('success', "Бронирование создано! Столов: " . count($validated['resource_ids']) . ", Сумма: {$totalAmount} ₽");
 
     } catch (\Exception $e) {
-        \DB::rollBack();
-        \Log::error('Booking creation error: ' . $e->getMessage());
-        \Log::error($e->getTraceAsString());
+        DB::rollBack();
+        Log::error('Booking creation error: ' . $e->getMessage());
+        Log::error($e->getTraceAsString());
         
         return back()
             ->withInput()
@@ -315,6 +352,24 @@ public function edit(Booking $booking)
     return view('admin.bookings.edit', compact('booking', 'users', 'places', 'zones', 'tables'));
 }
 
+public function getEquipment(Place $place)
+{
+    try {
+        \Log::info('=== Loading equipment for place: ' . $place->id);
+        
+        // Загружаем ВСЕ модели товаров
+        $equipment = ProductModel::select('id', 'name', 'base_price_hour as price')
+            ->get();
+            
+        \Log::info('Found equipment items: ' . $equipment->count());
+        \Log::info('Equipment data: ' . json_encode($equipment));
+            
+        return response()->json($equipment);
+    } catch (\Exception $e) {
+        \Log::error('Error loading equipment: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
 /**
  * Update the specified resource in storage.
  */
