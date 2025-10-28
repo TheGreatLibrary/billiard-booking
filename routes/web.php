@@ -67,6 +67,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         ->name('bookings.zones');
     Route::get('/bookings/tables/{zone}', [AdminBookingController::class, 'getTables'])
         ->name('bookings.tables');
+    Route::get('/bookings/equipment/{place}', [AdminBookingController::class, 'getEquipment'])
+    ->name('bookings.equipment');
 
     // CRUD маршруты
     Route::resource('users', UserController::class);
