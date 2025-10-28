@@ -1,109 +1,172 @@
 @extends('admin.layout.app')
 
-@section('title', 'Управление бронированиями')
+@section('title', 'Бронирование #' . $booking->id)
 
 @section('content')
 <div class="flex justify-between items-center mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">Бронирования</h1>
-        <p class="text-gray-600">Все бронирования системы</p>
+        <h1 class="text-2xl font-bold text-gray-800">Бронирование #{{ $booking->id }}</h1>
+        <p class="text-gray-600">Детали бронирования</p>
     </div>
-    <a href="{{ route('admin.bookings.create') }}" 
-       class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
-        ➕ Новое бронирование
+    <a href="{{ route('admin.bookings.index') }}" 
+       class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+        ← Назад к списку
     </a>
 </div>
 
-<!-- Фильтры -->
-<div class="bg-white rounded-lg shadow-md p-4 mb-6">
-    <div class="flex flex-wrap gap-4">
-        <select class="border rounded px-3 py-2">
-            <option>Все статусы</option>
-            <option>Ожидание</option>
-            <option>Подтверждено</option>
-            <option>Отменено</option>
-        </select>
-        <input type="date" class="border rounded px-3 py-2" placeholder="Дата">
-        <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Фильтр</button>
-    </div>
-</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Основная информация -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Информация о клиенте -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-lg font-semibold mb-4">Информация о клиенте</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Имя</p>
+                    <p class="font-medium">{{ $booking->user->name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Телефон</p>
+                    <p class="font-medium">{{ $booking->user->phone }}</p>
+                </div>
+                @if($booking->user->email)
+                <div>
+                    <p class="text-sm text-gray-500">Email</p>
+                    <p class="font-medium">{{ $booking->user->email }}</p>
+                </div>
+                @endif
+            </div>
+        </div>
 
-<div class="bg-white rounded-lg shadow-md overflow-hidden">
-    @if($bookings->count() > 0)
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пользователь</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Стол</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Время</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-                @foreach($bookings as $booking)
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">#{{ $booking->id }}</td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center">
-                            <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900">{{ $booking->user->name }}</div>
-                                <div class="text-sm text-gray-500">{{ $booking->user->email }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="text-sm text-gray-900">{{ $booking->place->name ?? 'N/A' }}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">{{ $booking->start_time->format('d.m.Y H:i') }}</div>
-                        <div class="text-sm text-gray-500">{{ $booking->end_time->format('H:i') }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                            @if($booking->status === 'confirmed') bg-green-100 text-green-800
-                            @elseif($booking->status === 'pending') bg-yellow-100 text-yellow-800
-                            @elseif($booking->status === 'canceled') bg-red-100 text-red-800
-                            @else bg-gray-100 text-gray-800 @endif">
-                            {{ $booking->status }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div class="flex space-x-2">
-                            <a href="{{ route('admin.bookings.show', $booking) }}" 
-                               class="text-blue-600 hover:text-blue-900">Просмотр</a>
-                            <a href="{{ route('admin.bookings.edit', $booking) }}" 
-                               class="text-green-600 hover:text-green-900">Изменить</a>
-                            <form action="{{ route('admin.bookings.destroy', $booking) }}" method="POST" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" 
-                                        class="text-red-600 hover:text-red-900"
-                                        onclick="return confirm('Удалить бронирование?')">
-                                    Удалить
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
+        <!-- Забронированные столы -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-lg font-semibold mb-4">Забронированные столы</h2>
+            
+            @foreach($booking->bookingResources as $br)
+            <div class="border-b pb-4 mb-4 last:border-b-0 last:mb-0 last:pb-0">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-medium text-lg">🎱 {{ $br->resource->code ?? 'Стол' }}</p>
+                        <p class="text-sm text-gray-500">{{ $br->resource->model->name }}</p>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Зона: {{ $br->resource->zone->name }}
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-green-600">{{ number_format($br->amount, 0, ',', ' ') }} ₽</p>
+                        <p class="text-sm text-gray-500">{{ $br->minutes }} минут</p>
+                    </div>
+                </div>
+                
+                <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                        <span class="text-gray-500">Начало:</span>
+                        <span class="font-medium">{{ \Carbon\Carbon::parse($br->starts_at)->format('d.m.Y H:i') }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Окончание:</span>
+                        <span class="font-medium">{{ \Carbon\Carbon::parse($br->ends_at)->format('d.m.Y H:i') }}</span>
+                    </div>
+                </div>
+
+                <!-- Детали ценообразования -->
+                <details class="mt-3">
+                    <summary class="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                        Детали расчёта цены
+                    </summary>
+                    <div class="mt-2 p-3 bg-gray-50 rounded text-sm space-y-1">
+                        <p>Базовая цена/час: {{ number_format($br->hour_price_snapshot, 0, ',', ' ') }} ₽</p>
+                        <p>Коэффициент зоны: {{ $br->zone_coef_snapshot }}</p>
+                        <p>Правило: {{ $br->rule_kind }} = {{ $br->rule_value }}</p>
+                    </div>
+                </details>
+            </div>
+            @endforeach
+        </div>
+
+        <!-- Заказ (если есть) -->
+        @if($booking->order)
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold">Заказ</h2>
+                <a href="{{ route('admin.orders.show', $booking->order) }}" 
+                   class="text-blue-600 hover:text-blue-800 text-sm">
+                    Посмотреть полностью →
+                </a>
+            </div>
+            
+            <div class="space-y-2">
+                @foreach($booking->order->items as $item)
+                <div class="flex justify-between items-center py-2 border-b last:border-b-0">
+                    <div>
+                        @if($item->type === 'table_time')
+                            <p class="font-medium">Аренда стола</p>
+                        @else
+                            <p class="font-medium">{{ $item->productModel->name }}</p>
+                            <p class="text-sm text-gray-500">x{{ $item->qty }}</p>
+                        @endif
+                    </div>
+                    <p class="font-semibold">{{ number_format($item->amount, 0, ',', ' ') }} ₽</p>
+                </div>
                 @endforeach
-            </tbody>
-        </table>
-        
-        <div class="bg-white px-6 py-3 border-t border-gray-200">
-            {{ $bookings->links() }}
+                
+                <div class="flex justify-between items-center pt-3 border-t-2 border-gray-300">
+                    <p class="font-bold text-lg">ИТОГО:</p>
+                    <p class="font-bold text-xl text-green-600">
+                        {{ number_format($booking->order->total_amount, 0, ',', ' ') }} ₽
+                    </p>
+                </div>
+            </div>
         </div>
-    @else
-        <div class="text-center py-12">
-            <div class="text-4xl mb-4">📅</div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Бронирования не найдены</h3>
-            <p class="text-gray-500 mb-4">Создайте первое бронирование</p>
-            <a href="{{ route('admin.bookings.create') }}" 
-               class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                Создать бронирование
-            </a>
+        @endif
+    </div>
+
+    <!-- Боковая панель -->
+    <div class="space-y-6">
+        <!-- Статус и управление -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-lg font-semibold mb-4">Статус</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500 mb-1">Текущий статус</p>
+                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded
+                        @if($booking->status === 'confirmed') bg-green-100 text-green-800
+                        @elseif($booking->status === 'pending') bg-yellow-100 text-yellow-800
+                        @elseif($booking->status === 'canceled') bg-red-100 text-red-800
+                        @elseif($booking->status === 'finished') bg-blue-100 text-blue-800
+                        @else bg-gray-100 text-gray-800
+                        @endif">
+                        {{ $booking->status }}
+                    </span>
+                </div>
+
+                <div>
+                    <p class="text-sm text-gray-500">Место</p>
+                    <p class="font-medium">{{ $booking->place->name }}</p>
+                    <p class="text-sm text-gray-600">{{ $booking->place->address }}</p>
+                </div>
+
+                <div>
+                    <p class="text-sm text-gray-500">Создано</p>
+                    <p class="font-medium">{{ $booking->created_at->format('d.m.Y H:i') }}</p>
+                </div>
+
+                @if($booking->comment)
+                <div>
+                    <p class="text-sm text-gray-500">Комментарий</p>
+                    <p class="text-sm">{{ $booking->comment }}</p>
+                </div>
+                @endif
+            </div>
+
+            <div class="mt-6 space-y-2">
+                <a href="{{ route('admin.bookings.edit', $booking) }}" 
+                   class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                    Редактировать
+                </a>
+            </div>
         </div>
-    @endif
+    </div>
 </div>
 @endsection

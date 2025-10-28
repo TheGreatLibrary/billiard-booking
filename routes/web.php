@@ -1,69 +1,91 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BookingController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PriceRuleController;
+use App\Http\Controllers\Admin\ProductTypeController;
+use App\Http\Controllers\Admin\ProductModelController;
+use App\Http\Controllers\Admin\PlaceController;
+use App\Http\Controllers\Admin\ZoneController;
+use App\Http\Controllers\Admin\ResourceController;
 
-Route::view('/', 'welcome');
+// Главная страница
+Route::view('/', 'welcome')->name('home');
 
-// Публичные маршруты для обычных пользователей
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Пользовательские страницы
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::view('profile', 'profile')->name('profile');
 
-Route::view('profile', 'profile')
-    ->middleware(['auth'])
-    ->name('profile');
+    // Обновление профиля
+    Route::patch('profile', function (Request $request) {
+        $user = auth()->user();
 
-// Маршруты бронирований для обычных пользователей
-Route::middleware(['auth'])->group(function () {
-    Route::resource('bookings', BookingController::class);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20|unique:users,phone,' . $user->id,
+            'email' => 'nullable|email|max:255|unique:users,email,' . $user->id,
+        ]);
+
+        $user->update($validated);
+
+        return back()->with('success', 'Данные профиля обновлены!');
+    })->name('profile.update');
+
+    // Обновление пароля
+    Route::put('password', function (Request $request) {
+        $validated = $request->validate([
+            'current_password' => 'required|current_password',
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        auth()->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('success', 'Пароль успешно изменён!');
+    })->name('password.update');
 });
 
-
-// 👇 ЕДИНЫЙ БЛОК АДМИНСКИХ МАРШРУТОВ
+// ============================================
+// АДМИНСКИЕ МАРШРУТЫ
+// ============================================
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    // Главная страница админки
-
+    
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/stats', [DashboardController::class, 'stats'])->name('stats');
-    Route::get('/payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
 
-
-Route::resource('bookings', App\Http\Controllers\Admin\BookingController::class);
-    
-    // Добавьте эти маршруты для AJAX
-    Route::get('/bookings/zones/{place}', [App\Http\Controllers\Admin\BookingController::class, 'getZones'])
+    // AJAX маршруты (ПЕРЕД resource!)
+    Route::get('/bookings/zones/{place}', [AdminBookingController::class, 'getZones'])
         ->name('bookings.zones');
-    Route::get('/bookings/tables/{zone}', [App\Http\Controllers\Admin\BookingController::class, 'getTables'])
+    Route::get('/bookings/tables/{zone}', [AdminBookingController::class, 'getTables'])
         ->name('bookings.tables');
-    // Все CRUD маршруты для админки
-    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
-    Route::resource('bookings', App\Http\Controllers\Admin\BookingController::class);
-    Route::resource('orders', App\Http\Controllers\Admin\OrderController::class);
-    Route::resource('payments', App\Http\Controllers\Admin\PaymentController::class);
-    Route::resource('product-types', App\Http\Controllers\Admin\ProductTypeController::class);
-    Route::resource('product-models', App\Http\Controllers\Admin\ProductModelController::class);
-    Route::resource('places', App\Http\Controllers\Admin\PlaceController::class);
-    Route::resource('zones', App\Http\Controllers\Admin\ZoneController::class);
-    Route::resource('price-rules', App\Http\Controllers\Admin\PriceRuleController::class);
-    Route::resource('resources', App\Http\Controllers\Admin\ResourceController::class);
 
+    // CRUD маршруты
+    Route::resource('users', UserController::class);
+    Route::resource('bookings', AdminBookingController::class);
+    Route::resource('orders', OrderController::class);
+    Route::resource('payments', PaymentController::class);
+    Route::resource('product-types', ProductTypeController::class);
+    Route::resource('product-models', ProductModelController::class);
+    Route::resource('places', PlaceController::class);
+    Route::resource('zones', ZoneController::class);
+    Route::resource('price-rules', PriceRuleController::class);
+    Route::resource('resources', ResourceController::class);
 
-
-
-    // Дополнительные маршруты изменения статусов
+    // Дополнительные маршруты
+    Route::get('/payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
     Route::post('/bookings/{booking}/change-status', [AdminBookingController::class, 'changeStatus'])
         ->name('bookings.change-status');
     Route::post('/orders/{order}/change-status', [OrderController::class, 'changeStatus'])
         ->name('orders.change-status');
 });
-
-
 
 require __DIR__.'/auth.php';
