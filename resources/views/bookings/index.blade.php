@@ -72,12 +72,12 @@
                         <div class="flex space-x-2">
                             <a href="{{ route('bookings.show', $booking) }}" 
                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
-                                👁️ Просмотр
+                                 Просмотр
                             </a>
                             @if($booking->status === 'pending')
                             <a href="{{ route('bookings.edit', $booking) }}" 
                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">
-                                ✏️ Изменить
+                                 Изменить
                             </a>
                             <form action="{{ route('bookings.destroy', $booking) }}" method="POST" class="inline">
                                 @csrf
@@ -85,7 +85,7 @@
                                 <button type="submit" 
                                         class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                                         onclick="return confirm('Отменить бронирование?')">
-                                    ❌ Отменить
+                                     Отменить
                                 </button>
                             </form>
                             @endif
