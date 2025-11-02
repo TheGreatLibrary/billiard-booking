@@ -35,6 +35,28 @@
                     @error('user_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
 
+                <!-- Бронирование -->
+<div class="md:col-span-2">
+    <label class="block text-sm font-medium text-gray-700 mb-2">Бронирование *</label>
+    <select name="booking_id" required
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500">
+        <option value="">-- Выберите бронирование --</option>
+@foreach($bookings as $booking)
+    @php
+        $firstResource = $booking->bookingResources->first();
+        $zoneName = $firstResource ? $firstResource->resource->zone->name : '';
+        $tableName = $firstResource ? $firstResource->resource->model->name : '';
+        $date = \Carbon\Carbon::parse($booking->starts_at)->format('Y-m-d H:i');
+    @endphp
+    <option value="{{ $booking->id }}">
+        #{{ $booking->id }} — {{ $date }} ({{ $zoneName }} / {{ $tableName }})
+    </option>
+@endforeach
+
+    </select>
+    @error('booking_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+</div>
+
                 <!-- Сумма -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Сумма заказа *</label>

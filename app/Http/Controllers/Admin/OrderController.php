@@ -1,59 +1,75 @@
 <?php
-// app/Http/Controllers/Admin/OrderController.php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\OrderService;
 
 class OrderController extends Controller
 {
+    protected OrderService $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $orders = Order::with(['user', 'items'])
-            ->latest()
-            ->paginate(15);
+public function index()
+{
+    $orders = Order::with(['user', 'items'])->latest()->paginate(15);
 
-        return view('admin.orders.index', compact('orders'));
-    }
+    // Статусы
+    $statusCounts = [
+        'completed'  => Order::where('status', 'completed')->count(),
+        'processing' => Order::where('status', 'processing')->count(),
+        'pending'    => Order::where('status', 'pending')->count(),
+        'canceled'   => Order::where('status', 'canceled')->count(),
+    ];
+
+    return view('admin.orders.index', compact('orders', 'statusCounts'));
+}
+
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        $users = User::all();
-        return view('admin.orders.create', compact('users'));
-    }
+public function create()
+{
+    $bookings = \App\Models\Booking::with(['place', 'user'])->get();
+    $users = \App\Models\User::all();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'total_amount' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,processing,completed,canceled',
-            'notes' => 'nullable|string|max:500',
-        ]);
+    return view('admin.orders.create', compact('bookings', 'users'));
+}
 
-        Order::create($request->all());
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'booking_id'    => 'required|exists:bookings,id',
+        'user_id'       => 'required|exists:users,id',
+        'total_amount'  => 'required|numeric|min:0',
+        'status'        => 'required|in:pending,processing,completed,canceled',
+        'notes'         => 'nullable|string|max:500',
+    ]);
 
-        return redirect()->route('admin.orders.index')
-            ->with('success', 'Заказ создан успешно!');
-    }
+    $order = $this->orderService->createOrder($validated);
+
+    return redirect()->route('admin.orders.show', $order)
+        ->with('success', 'Заказ создан успешно!');
+}
+
 
     /**
      * Display the specified resource.
      */
     public function show(Order $order)
     {
-        $order->load(['user', 'items', 'payments']);
+        $order->load(['user', 'items', 'payments', 'booking.place']);
         return view('admin.orders.show', compact('order'));
     }
 
@@ -71,17 +87,20 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
+        $validated = $request->validate([
+            'user_id'      => 'required|exists:users,id',
             'total_amount' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,processing,completed,canceled',
-            'notes' => 'nullable|string|max:500',
+            'status'       => 'required|in:pending,processing,completed,canceled',
+            'notes'        => 'nullable|string|max:500',
         ]);
 
-        $order->update($request->all());
+        $order->update([
+            ...$validated,
+            'total_amount' => $validated['total_amount'],
+        ]);
 
         return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Заказ обновлен успешно!');
+            ->with('success', 'Заказ обновлён успешно!');
     }
 
     /**
@@ -92,20 +111,22 @@ class OrderController extends Controller
         $order->delete();
 
         return redirect()->route('admin.orders.index')
-            ->with('success', 'Заказ удален успешно!');
+            ->with('success', 'Заказ удалён успешно!');
     }
 
-    /**
-     * Change order status
-     */
-    public function changeStatus(Order $order, Request $request)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,processing,completed,canceled'
-        ]);
+public function changeStatus(Order $order, Request $request)
+{
+    $request->validate([
+        'status' => 'required|in:pending,processing,completed,canceled',
+    ]);
 
-        $order->update(['status' => $request->status]);
+    $order->update([
+        'status' => $request->status,
+    ]);
 
-        return back()->with('success', 'Статус заказа изменен!');
-    }
+    // Перенаправляем обратно на страницу заказа
+    return redirect()->route('admin.orders.show', $order)
+                     ->with('success', 'Статус заказа обновлён!');
+}
+
 }

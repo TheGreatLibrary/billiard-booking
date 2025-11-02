@@ -71,11 +71,11 @@
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
                         <span class="text-gray-600">Дата создания:</span>
-                        <span class="font-medium">{{ $order->created_at->format('d.m.Y H:i') }}</span>
+                        <span class="font-medium">{{ optional($order->created_at)->format('d.m.Y H:i') ?? '-' }}</span>
                     </div>
                     <div>
                         <span class="text-gray-600">Последнее обновление:</span>
-                        <span class="font-medium">{{ $order->updated_at->format('d.m.Y H:i') }}</span>
+                        <span class="font-medium">{{ optional($order->updated_at)->format('d.m.Y H:i') ?? '-' }}</span>
                     </div>
                 </div>
             </div>

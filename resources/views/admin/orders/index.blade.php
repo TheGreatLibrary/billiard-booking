@@ -21,15 +21,15 @@
         <div class="text-sm text-gray-600">Всего заказов</div>
     </div>
     <div class="bg-white rounded-lg shadow p-4">
-        <div class="text-2xl font-bold text-green-600">{{ $orders->where('status', 'completed')->count() }}</div>
+        <div class="text-2xl font-bold text-green-600">{{ $statusCounts['completed'] }}</div>
         <div class="text-sm text-gray-600">Завершено</div>
     </div>
     <div class="bg-white rounded-lg shadow p-4">
-        <div class="text-2xl font-bold text-yellow-600">{{ $orders->where('status', 'processing')->count() }}</div>
+        <div class="text-2xl font-bold text-yellow-600">{{ $statusCounts['processing'] }}</div>
         <div class="text-sm text-gray-600">В обработке</div>
     </div>
     <div class="bg-white rounded-lg shadow p-4">
-        <div class="text-2xl font-bold text-red-600">{{ $orders->where('status', 'canceled')->count() }}</div>
+        <div class="text-2xl font-bold text-red-600">{{ $statusCounts['canceled'] }}</div>
         <div class="text-sm text-gray-600">Отменено</div>
     </div>
 </div>
@@ -77,22 +77,16 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex space-x-2">
                             <a href="{{ route('admin.orders.show', $order) }}" 
-                               class="text-blue-600 hover:text-blue-900" title="Просмотр">
-                                👁️
-                            </a>
+                               class="text-blue-600 hover:text-blue-900" title="Просмотр">👁️</a>
                             <a href="{{ route('admin.orders.edit', $order) }}" 
-                               class="text-green-600 hover:text-green-900" title="Редактировать">
-                                ✏️
-                            </a>
+                               class="text-green-600 hover:text-green-900" title="Редактировать">✏️</a>
                             <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" 
                                         class="text-red-600 hover:text-red-900"
                                         onclick="return confirm('Удалить заказ?')"
-                                        title="Удалить">
-                                    🗑️
-                                </button>
+                                        title="Удалить">🗑️</button>
                             </form>
                         </div>
                     </td>
