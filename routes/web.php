@@ -59,22 +59,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // ============================================
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/stats', [DashboardController::class, 'stats'])->name('stats');
+    /**
+     * !!!!!!!!!!!!!! НОВЫЕ МАРШРУТЫ ДЛЯ LIVEWIRE !!!!!!!!!!
+     */
+    Route::get('/dashboard', \App\Livewire\Admin\AdminDashboard::class)->name('dashboard');
 
-    // AJAX маршруты (ПЕРЕД resource!)
-    Route::get('/bookings/zones/{place}', [AdminBookingController::class, 'getZones'])
-        ->name('bookings.zones');
-    Route::get('/bookings/tables/{zone}', [AdminBookingController::class, 'getTables'])
-        ->name('bookings.tables');
-    Route::get('/bookings/equipment/{place}', [AdminBookingController::class, 'getEquipment'])
-    ->name('bookings.equipment');
+    Route::get('/bookings', \App\Livewire\Admin\BookingList::class)->name('bookings.index');
+    Route::get('/bookings/create', \App\Livewire\Admin\BookingForm::class)->name('bookings.create');
+    Route::get('/bookings/{booking}/edit', \App\Livewire\Admin\BookingEditForm::class)->name('bookings.edit');
+    Route::get('/bookings/{booking}', \App\Livewire\Admin\BookingShow::class)->name('bookings.show'); 
+   
+    Route::get('/orders/{order}', \App\Livewire\Admin\OrderShow::class)->name('orders.show');
+    Route::get('/orders', \App\Livewire\Admin\OrderList::class)->name('orders.index');
+
+    Route::get('/payments/{payment}', \App\Livewire\Admin\PaymentShow::class)->name('payments.show');
+    Route::get('/payments', \App\Livewire\Admin\PaymentList::class)->name('payments.index');
+    Route::get('/payments/statistics', \App\Livewire\Admin\PaymentStatistics::class)->name('payments.statistics');
+
+    /**
+     * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
+     */
 
     // CRUD маршруты
     Route::resource('users', UserController::class);
-    Route::resource('bookings', AdminBookingController::class);
-    Route::resource('orders', OrderController::class);
-    Route::resource('payments', PaymentController::class);
+    //Route::resource('payments', PaymentController::class);
     Route::resource('product-types', ProductTypeController::class);
     Route::resource('product-models', ProductModelController::class);
     Route::resource('places', PlaceController::class);
@@ -82,12 +90,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('price-rules', PriceRuleController::class);
     Route::resource('resources', ResourceController::class);
 
-    // Дополнительные маршруты
-    Route::get('/payments/statistics', [PaymentController::class, 'statistics'])->name('payments.statistics');
-    Route::post('/bookings/{booking}/change-status', [AdminBookingController::class, 'changeStatus'])
-        ->name('bookings.change-status');
-    Route::post('/orders/{order}/change-status', [OrderController::class, 'changeStatus'])
-        ->name('orders.change-status');
 });
 
 require __DIR__.'/auth.php';
