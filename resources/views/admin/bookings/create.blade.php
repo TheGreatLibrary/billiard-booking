@@ -3,6 +3,7 @@
 @section('title', 'Новое бронирование')
 
 @section('content')
+
 <div class="flex justify-between items-center mb-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-800">Новое бронирование</h1>

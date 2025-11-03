@@ -25,9 +25,6 @@ class DatabaseSeeder extends Seeder
             PriceRuleSeeder::class,
         ]);
 
-        // ⚠️ ВАЖНО: НЕ вызывать User::factory(…) тут — именно это и сыпало ошибку
-
-
         // создаём админа с телефоном
         DB::table('users')->updateOrInsert(
             ['email' => 'admin@example.com'],

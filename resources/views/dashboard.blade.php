@@ -44,7 +44,7 @@
                                 👤 Профиль
                             </a>
 
-                            @if(auth()->user()->hasRole('admin'))
+                            @if(auth()->user()->hasRole('admin') || auth()->user()->hasRole('moderator'))
                             <a href="{{ route('admin.dashboard') }}" 
                                class="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 font-semibold">
                                 ⚙️ Админка
