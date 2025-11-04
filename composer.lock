@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e8915a792fd0e23583828632bd93560a",
+    "content-hash": "f54c677cdd3d13599ada1d6ca1d07ec4",
     "packages": [
         {
             "name": "brick/math",
@@ -1395,16 +1395,16 @@
         },
         {
             "name": "laravel/telescope",
-            "version": "v5.13.0",
+            "version": "v5.14.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/telescope.git",
-                "reference": "ad5fadb26c1e4dc2e35958e6dc36191dcf1c10d8"
+                "reference": "99e9487604e67424d07b83b5ab3401850d237685"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/telescope/zipball/ad5fadb26c1e4dc2e35958e6dc36191dcf1c10d8",
-                "reference": "ad5fadb26c1e4dc2e35958e6dc36191dcf1c10d8",
+                "url": "https://api.github.com/repos/laravel/telescope/zipball/99e9487604e67424d07b83b5ab3401850d237685",
+                "reference": "99e9487604e67424d07b83b5ab3401850d237685",
                 "shasum": ""
             },
             "require": {
@@ -1458,9 +1458,9 @@
             ],
             "support": {
                 "issues": "https://github.com/laravel/telescope/issues",
-                "source": "https://github.com/laravel/telescope/tree/v5.13.0"
+                "source": "https://github.com/laravel/telescope/tree/v5.14.0"
             },
-            "time": "2025-09-30T10:03:05+00:00"
+            "time": "2025-10-06T14:52:49+00:00"
         },
         {
             "name": "laravel/tinker",
