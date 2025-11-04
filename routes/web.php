@@ -1,5 +1,6 @@
 <?php
-
+use App\Livewire\Admin\ProductTypes;
+use App\Livewire\Admin\ResourceManager;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\{
@@ -9,7 +10,6 @@ use App\Http\Controllers\Admin\{
     OrderController,
     PaymentController,
     PriceRuleController,
-    HallController,
     ProductTypeController,
     ProductModelController,
     PlaceController,
@@ -52,21 +52,17 @@ Route::prefix('admin')
     Route::resource('orders', OrderController::class);
     Route::post('/orders/{order}/change-status', [OrderController::class, 'changeStatus'])->name('orders.change-status');
     Route::resource('payments', PaymentController::class);
-    Route::resource('product-types', ProductTypeController::class);
+ //   Route::resource('product-types', ProductTypeController::class);
     Route::resource('product-models', ProductModelController::class);
     Route::resource('places', PlaceController::class);
     Route::resource('zones', ZoneController::class);
     Route::resource('price-rules', PriceRuleController::class);
-    Route::resource('resources', ResourceController::class);
 
-    // --- Редактор зала ---
-// === ХОЛЛ / КАРТА ЗАЛА ===
-Route::get('/', [HallController::class, 'index'])->name('hall.index');
-Route::get('/hall/resources', [HallController::class, 'resources']);
-Route::post('/hall/add/{id}', [HallController::class, 'add']);
-Route::post('/hall/update-position/{id}', [HallController::class, 'updatePosition']);
-Route::post('/hall/remove/{id}', [HallController::class, 'remove']);
 
+
+    // Livewire "ресурсный" маршрут для ProductTypes
+    Route::get('/product-types', ProductTypes::class)->name('product-types.index');
+    Route::get('/resources', ResourceManager::class)->name('resources');
 });
 
 require __DIR__.'/auth.php';

@@ -20,10 +20,6 @@
         <a href="{{ route('admin.users.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.users.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Пользователи
         </a>
-        <a href="{{ route('admin.hall.index') }}"  class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.hall.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
-            Карта зала
-        </a>
-
         <a href="{{ route('admin.bookings.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.bookings.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Бронирования
         </a>
