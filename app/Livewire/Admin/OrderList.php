@@ -8,13 +8,19 @@ use App\Models\Order;
 
 class OrderList extends Component
 {
-     use WithPagination;
+    use WithPagination;
 
     public $search = '';
+    public $statusFilter = ''; // ← Добавили
     public $sortBy = 'created_at';
     public $sortDirection = 'desc';
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter() // ← Добавили
     {
         $this->resetPage();
     }
@@ -38,12 +44,17 @@ class OrderList extends Component
                       ->orWhere('email', 'like', "%{$this->search}%")
                 )
             )
+            ->when($this->statusFilter, fn($q) =>  // ← Добавили
+                $q->where('status', $this->statusFilter)
+            )
             ->orderBy($this->sortBy, $this->sortDirection)
             ->paginate(15);
 
         $stats = [
             'total' => Order::count(),
-            'total_amount' => Order::sum('total_amount'),
+            'pending' => Order::where('status', 'pending')->count(), // ← Добавили
+            'paid' => Order::where('status', 'paid')->count(), // ← Добавили
+            'total_amount' => Order::where('status', 'paid')->sum('total_amount'), // ← Изменили
         ];
 
         return view('livewire.admin.order-list', compact('orders', 'stats'))
@@ -55,13 +66,12 @@ class OrderList extends Component
     {
         $order = Order::findOrFail($orderId);
         
-        // Проверка: можно ли удалить
-        if ($order->payments()->exists()) {
-            session()->flash('error', 'Нельзя удалить заказ с платежами');
+        if (!$order->canEdit()) { // ← Изменили
+            session()->flash('error', 'Нельзя удалить оплаченный заказ');
             return;
         }
         
-        $order->delete();
+        $order->booking->delete(); // ← Каскадно удалит Order
         session()->flash('success', 'Заказ удалён');
     }
 }

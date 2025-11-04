@@ -1,121 +1,193 @@
 <div>
-     <h1 class="text-2xl font-bold mb-6">Общая статистика</h1>
-
-    {{-- Быстрые ссылки на основные разделы --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
-        <a href="{{ route('admin.payments.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Платежей</div>
-            <div class="text-2xl font-bold">{{ $total['payments'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.orders.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Заказов</div>
-            <div class="text-2xl font-bold">{{ $total['orders'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.bookings.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Бронирований</div>
-            <div class="text-2xl font-bold">{{ $total['bookings'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.users.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Пользователей</div>
-            <div class="text-2xl font-bold">{{ $total['users'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.product-types.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Типы товаров</div>
-            <div class="text-2xl font-bold">{{ $total['productTypes'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.product-models.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Модели товаров</div>
-            <div class="text-2xl font-bold">{{ $total['productModels'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.places.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Места</div>
-            <div class="text-2xl font-bold">{{ $total['places'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.zones.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Зоны</div>
-            <div class="text-2xl font-bold">{{ $total['zones'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.price-rules.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Правила цен</div>
-            <div class="text-2xl font-bold">{{ $total['priceRules'] }}</div>
-        </a>
-
-        <a href="{{ route('admin.resources.index') }}" 
-           class="block bg-white p-4 rounded shadow hover:bg-gray-50 transition">
-            <div class="text-gray-500 text-sm">Ресурсы (столы)</div>
-            <div class="text-2xl font-bold">{{ $total['resources'] }}</div>
-        </a>
+     <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">📊 Панель управления</h1>
+            <p class="text-gray-600">Обзор системы бронирования</p>
+        </div>
+        <button wire:click="loadStatistics" 
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                wire:loading.attr="disabled">
+            <span wire:loading.remove>🔄 Обновить</span>
+            <span wire:loading>⏳ Загрузка...</span>
+        </button>
     </div>
 
-    {{-- Платежи по месяцам --}}
-    <div class="bg-white shadow rounded p-4">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold">Платежи по месяцам</h2>
-            <button wire:click="loadStatistics" 
-                    class="text-sm text-blue-600 hover:text-blue-800"
-                    wire:loading.attr="disabled">
-                <span wire:loading.remove>🔄 Обновить</span>
-                <span wire:loading>⏳ Загрузка...</span>
-            </button>
+    <!-- Основные метрики -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Заказы -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-black">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium">Заказы</h3>
+                <span class="text-2xl">🛒</span>
+            </div>
+            <div class="text-3xl font-bold mb-1">{{ $total['orders'] }}</div>
+            <div class="text-sm text-black opacity-90">
+                <span class="font-semibold">{{ $total['orders_paid'] }}</span> оплачено · 
+                <span class="font-semibold">{{ $total['orders_pending'] }}</span> ожидает
+            </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full border-collapse">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="px-4 py-2 text-left">Месяц</th>
-                        <th class="px-4 py-2 text-center">Количество</th>
-                        <th class="px-4 py-2 text-right">Сумма</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($monthly as $month => $data)
-                        <tr class="border-t hover:bg-gray-50">
-                            <td class="px-4 py-2">{{ $month }}</td>
-                            <td class="px-4 py-2 text-center">{{ $data->count }}</td>
-                            <td class="px-4 py-2 text-right font-semibold">
-                                {{ number_format($data->amount, 2, ',', ' ') }} ₽
-                            </td>
-                        </tr>
-                    @empty
+        <!-- Выручка -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-black">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium">Выручка</h3>
+                <span class="text-2xl">💰</span>
+            </div>
+            <div class="text-3xl font-bold mb-1">{{ number_format($total['amount'], 0, '', ' ') }} ₽</div>
+            <div class="text-sm text-black opacity-90">Только оплаченные заказы</div>
+        </div>
+
+        <!-- Бронирования -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-black">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium">Бронирования</h3>
+                <span class="text-2xl">📅</span>
+            </div>
+            <div class="text-3xl font-bold mb-1">{{ $total['bookings'] }}</div>
+            <div class="text-sm text-black opacity-90">Всего бронирований</div>
+        </div>
+
+        <!-- Пользователи -->
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-black">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium">Пользователи</h3>
+                <span class="text-2xl">👥</span>
+            </div>
+            <div class="text-3xl font-bold mb-1">{{ $total['users'] }}</div>
+            <div class="text-sm text-black opacity-90">Зарегистрировано</div>
+        </div>
+    </div>
+
+    <!-- Статистика по статусам заказов -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">📈 Статусы заказов</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div class="text-3xl font-bold text-yellow-600">{{ $statusStats['pending'] ?? 0 }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">Ожидает оплаты</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <div class="text-3xl font-bold text-green-600">{{ $statusStats['paid'] ?? 0 }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">Оплачено</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="text-3xl font-bold text-gray-600">{{ $statusStats['canceled'] ?? 0 }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">Отменено</div>
+            </div>
+            <div class="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div class="text-3xl font-bold text-purple-600">{{ $statusStats['refunded'] ?? 0 }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">Возврат</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- График по месяцам -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">📊 Динамика оплат по месяцам</h2>
+        
+        @if($monthly->count() > 0)
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
                         <tr>
-                            <td colspan="3" class="px-4 py-2 text-center text-gray-500">
-                                Нет данных
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Месяц</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Количество</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Сумма</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">График</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @php $maxAmount = $monthly->max('amount') ?? 1; @endphp
+                        @foreach($monthly as $month => $data)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium text-gray-800">{{ $month }}</td>
+                            <td class="px-4 py-3 text-gray-700">{{ $data->count }}</td>
+                            <td class="px-4 py-3 font-semibold text-green-600">{{ number_format($data->amount, 2) }} ₽</td>
+                            <td class="px-4 py-3">
+                                <div class="w-full bg-gray-200 rounded-full h-4">
+                                    <div class="bg-green-500 h-4 rounded-full transition-all" 
+                                         style="width: {{ ($data->amount / $maxAmount) * 100 }}%"></div>
+                                </div>
                             </td>
                         </tr>
-                    @endforelse
-                </tbody>
-                @if($monthly->count() > 0)
-                    <tfoot class="bg-gray-50 font-semibold">
-                        <tr class="border-t-2">
-                            <td class="px-4 py-2">ИТОГО</td>
-                            <td class="px-4 py-2 text-center">
-                                {{ $monthly->sum('count') }}
-                            </td>
-                            <td class="px-4 py-2 text-right">
-                                {{ number_format($monthly->sum('amount'), 2, ',', ' ') }} ₽
-                            </td>
+                        @endforeach
+                    </tbody>
+                    <tfoot class="bg-gray-50 font-bold">
+                        <tr>
+                            <td class="px-4 py-3 text-gray-800">ИТОГО:</td>
+                            <td class="px-4 py-3 text-gray-800">{{ $monthly->sum('count') }}</td>
+                            <td class="px-4 py-3 text-green-600">{{ number_format($monthly->sum('amount'), 2) }} ₽</td>
+                            <td class="px-4 py-3"></td>
                         </tr>
                     </tfoot>
-                @endif
-            </table>
+                </table>
+            </div>
+        @else
+            <div class="text-center py-8 text-gray-500">
+                <div class="text-4xl mb-2">📊</div>
+                <p>Нет данных по оплатам</p>
+            </div>
+        @endif
+    </div>
+
+    <!-- Справочники -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">🗂️ Справочники</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <a href="{{ route('admin.places.index') }}" 
+               class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition">
+                <div class="text-2xl font-bold text-blue-600">{{ $total['places'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">🏢 Места</div>
+            </a>
+            <a href="{{ route('admin.zones.index') }}" 
+               class="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition">
+                <div class="text-2xl font-bold text-purple-600">{{ $total['zones'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">📍 Зоны</div>
+            </a>
+            <a href="{{ route('admin.resources.index') }}" 
+               class="p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition">
+                <div class="text-2xl font-bold text-green-600">{{ $total['resources'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">🎱 Столы</div>
+            </a>
+            <a href="{{ route('admin.product-models.index') }}" 
+               class="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition">
+                <div class="text-2xl font-bold text-orange-600">{{ $total['productModels'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">📦 Товары</div>
+            </a>
+            <a href="{{ route('admin.product-types.index') }}" 
+               class="p-4 bg-pink-50 hover:bg-pink-100 rounded-lg border border-pink-200 transition">
+                <div class="text-2xl font-bold text-pink-600">{{ $total['productTypes'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">🏷️ Типы товаров</div>
+            </a>
+            <a href="{{ route('admin.price-rules.index') }}" 
+               class="p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200 transition">
+                <div class="text-2xl font-bold text-yellow-600">{{ $total['priceRules'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">💵 Ценовые правила</div>
+            </a>
+            <a href="{{ route('admin.users.index') }}" 
+               class="p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition">
+                <div class="text-2xl font-bold text-indigo-600">{{ $total['users'] }}</div>
+                <div class="text-sm text-gray-700 mt-1 font-medium">👤 Пользователи</div>
+            </a>
         </div>
+    </div>
+
+    <!-- Быстрые действия -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="{{ route('admin.bookings.create') }}" 
+           class="bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg shadow-md text-center transition">
+            <div class="text-3xl mb-2">➕</div>
+            <div class="font-semibold text-lg">Новое бронирование</div>
+        </a>
+        <a href="{{ route('admin.orders.index') }}" 
+           class="bg-green-500 hover:bg-green-600 text-white p-6 rounded-lg shadow-md text-center transition">
+            <div class="text-3xl mb-2">🛒</div>
+            <div class="font-semibold text-lg">Все заказы</div>
+        </a>
+        <a href="{{ route('admin.bookings.index') }}" 
+           class="bg-purple-500 hover:bg-purple-600 text-white p-6 rounded-lg shadow-md text-center transition">
+            <div class="text-3xl mb-2">📅</div>
+            <div class="font-semibold text-lg text-black">Все бронирования</div>
+        </a>
     </div>
 </div>

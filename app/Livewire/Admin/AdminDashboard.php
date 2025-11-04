@@ -1,15 +1,15 @@
 <?php
 
 namespace App\Livewire\Admin;
-
 use Livewire\Component;
-use App\Models\{Booking, Order, Payment, User, ProductType, ProductModel, Place, Zone, PriceRule, Resource};
+use App\Models\{Booking, Order, User, ProductType, ProductModel, Place, Zone, PriceRule, Resource};
 use Illuminate\Support\Facades\DB;
 
 class AdminDashboard extends Component
 {
-     public $total = [];
+    public $total = [];
     public $monthly = [];
+    public $statusStats = [];
 
     public function mount()
     {
@@ -20,9 +20,10 @@ class AdminDashboard extends Component
     {
         // Основные показатели
         $this->total = [
-            'payments'      => Payment::count(),
-            'amount'        => Payment::sum('amount') / 100,
             'orders'        => Order::count(),
+            'orders_paid'   => Order::where('status', 'paid')->count(),
+            'orders_pending'=> Order::where('status', 'pending')->count(),
+            'amount'        => Order::where('status', 'paid')->sum('total_amount'),
             'bookings'      => Booking::count(),
             'users'         => User::count(),
             'productTypes'  => ProductType::count(),
@@ -33,12 +34,20 @@ class AdminDashboard extends Component
             'resources'     => Resource::count(),
         ];
 
-        // Разбивка по месяцам (SQLite)
-        $this->monthly = Payment::select(
+        // Статистика по статусам заказов
+        $this->statusStats = Order::select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->get()
+            ->keyBy('status')
+            ->map(fn($item) => $item->count);
+
+        // Разбивка по месяцам (SQLite) - оплаченные заказы
+        $this->monthly = Order::select(
                 DB::raw("strftime('%Y-%m', paid_at) as month"),
                 DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(amount) / 100 as amount')
+                DB::raw('SUM(total_amount) as amount')
             )
+            ->where('status', 'paid')
             ->whereNotNull('paid_at')
             ->groupBy('month')
             ->orderBy('month', 'desc')
@@ -50,6 +59,7 @@ class AdminDashboard extends Component
     public function render()
     {
         return view('livewire.admin.admin-dashboard')
-            ->layout('admin.layout.app-livewire');
+            ->layout('admin.layout.app-livewire')
+            ->title('Панель управления');
     }
 }

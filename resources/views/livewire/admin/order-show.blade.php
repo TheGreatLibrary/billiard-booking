@@ -1,13 +1,20 @@
 <div>
-     <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold">Заказ #{{ $order->id }}</h1>
             <p class="text-gray-600">Детальная информация</p>
         </div>
         <div class="flex space-x-2">
+            @if($order->canPay())
+                <a href="{{ route('admin.orders.pay', $order) }}" 
+                   class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                    💳 Оплатить
+                </a>
+            @endif
+            
             <a href="{{ route('admin.orders.index') }}" 
                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
-                ← Назад
+                ← Назад к заказам
             </a>
         </div>
     </div>
@@ -23,6 +30,21 @@
                         <p class="text-lg font-semibold">#{{ $order->id }}</p>
                     </div>
                     <div>
+                        <label class="text-sm text-gray-600">Статус</label>
+                        <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full
+                            @if($order->status === 'paid') bg-green-100 text-green-800
+                            @elseif($order->status === 'pending') bg-yellow-100 text-yellow-800
+                            @elseif($order->status === 'canceled') bg-gray-100 text-gray-800
+                            @elseif($order->status === 'refunded') bg-purple-100 text-purple-800
+                            @endif">
+                            @if($order->status === 'paid') Оплачено
+                            @elseif($order->status === 'pending') Ожидает оплаты
+                            @elseif($order->status === 'canceled') Отменено
+                            @elseif($order->status === 'refunded') Возврат
+                            @endif
+                        </span>
+                    </div>
+                    <div>
                         <label class="text-sm text-gray-600">Сумма</label>
                         <p class="text-xl font-bold text-green-600">{{ number_format($order->total_amount, 2) }} ₽</p>
                     </div>
@@ -30,6 +52,21 @@
                         <label class="text-sm text-gray-600">Дата создания</label>
                         <p class="text-sm">{{ $order->created_at->format('d.m.Y H:i') }}</p>
                     </div>
+                    @if($order->isPaid())
+                    <div>
+                        <label class="text-sm text-gray-600">Способ оплаты</label>
+                        <p class="text-sm">
+                            @if($order->payment_method === 'cash') 💵 Наличные
+                            @elseif($order->payment_method === 'card') 💳 Карта
+                            @elseif($order->payment_method === 'online') 🌐 Онлайн
+                            @endif
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-600">Дата оплаты</label>
+                        <p class="text-sm">{{ $order->paid_at->format('d.m.Y H:i') }}</p>
+                    </div>
+                    @endif
                     <div>
                         <label class="text-sm text-gray-600">Бронирование</label>
                         <p class="text-sm">
@@ -108,11 +145,29 @@
                 <h2 class="text-lg font-semibold mb-4">⚡ Действия</h2>
                 
                 <div class="flex flex-col space-y-2">
-                    <button wire:click="deleteOrder" 
-                            wire:confirm="Удалить заказ?"
-                            class="bg-red-500 hover:bg-red-600 text-white py-2 rounded">
-                        🗑️ Удалить заказ
-                    </button>
+                    @if($order->canPay())
+                        <a href="{{ route('admin.orders.pay', $order) }}" 
+                           class="bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded">
+                            💳 Оплатить заказ
+                        </a>
+                        
+                        <a href="{{ route('admin.bookings.edit', $order->booking_id) }}" 
+                           class="bg-blue-500 hover:bg-blue-600 text-white text-center py-2 rounded">
+                            ✏️ Редактировать бронь
+                        </a>
+                        
+                        <button wire:click="deleteOrder" 
+                                wire:confirm="Удалить заказ и бронирование?"
+                                class="bg-red-500 hover:bg-red-600 text-white py-2 rounded">
+                            🗑️ Удалить заказ
+                        </button>
+                    @elseif($order->isPaid())
+                        <button wire:click="cancelOrder" 
+                                wire:confirm="Отменить заказ и вернуть деньги?"
+                                class="bg-orange-500 hover:bg-orange-600 text-white py-2 rounded">
+                            🔄 Отменить и вернуть деньги
+                        </button>
+                    @endif
                 </div>
             </div>
 
@@ -128,6 +183,12 @@
                         <span class="text-gray-600">Место:</span>
                         <p>{{ $order->place->name }}</p>
                     </div>
+                    @if($order->booking->comment)
+                    <div>
+                        <span class="text-gray-600">Комментарий:</span>
+                        <p class="mt-1 p-2 bg-gray-50 rounded">{{ $order->booking->comment }}</p>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

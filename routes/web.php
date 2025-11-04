@@ -71,18 +71,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
    
     Route::get('/orders/{order}', \App\Livewire\Admin\OrderShow::class)->name('orders.show');
     Route::get('/orders', \App\Livewire\Admin\OrderList::class)->name('orders.index');
-
-    Route::get('/payments/{payment}', \App\Livewire\Admin\PaymentShow::class)->name('payments.show');
-    Route::get('/payments', \App\Livewire\Admin\PaymentList::class)->name('payments.index');
-    Route::get('/payments/statistics', \App\Livewire\Admin\PaymentStatistics::class)->name('payments.statistics');
-
+ Route::get('/orders/{order}/pay', \App\Livewire\Admin\OrderPay::class)->name('orders.pay');
     /**
      * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
      */
 
     // CRUD маршруты
     Route::resource('users', UserController::class);
-    //Route::resource('payments', PaymentController::class);
     Route::resource('product-types', ProductTypeController::class);
     Route::resource('product-models', ProductModelController::class);
     Route::resource('places', PlaceController::class);
