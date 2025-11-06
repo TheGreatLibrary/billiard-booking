@@ -1,6 +1,4 @@
 <?php
-use App\Livewire\Admin\ProductTypes;
-use App\Livewire\Admin\ResourceManager;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +13,7 @@ use App\Http\Controllers\Admin\ProductTypeController;
 use App\Http\Controllers\Admin\ProductModelController;
 use App\Http\Controllers\Admin\PlaceController;
 use App\Http\Controllers\Admin\ZoneController;
-use App\Http\Controllers\Admin\ResourceController;
+
 
 // Главная страница
 Route::view('/', 'welcome')->name('home');
@@ -69,22 +67,35 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/bookings/create', \App\Livewire\Admin\BookingForm::class)->name('bookings.create');
     Route::get('/bookings/{booking}/edit', \App\Livewire\Admin\BookingEditForm::class)->name('bookings.edit');
     Route::get('/bookings/{booking}', \App\Livewire\Admin\BookingShow::class)->name('bookings.show'); 
-   
     Route::get('/orders/{order}', \App\Livewire\Admin\OrderShow::class)->name('orders.show');
     Route::get('/orders', \App\Livewire\Admin\OrderList::class)->name('orders.index');
- Route::get('/orders/{order}/pay', \App\Livewire\Admin\OrderPay::class)->name('orders.pay');
+    Route::get('/orders/{order}/pay', \App\Livewire\Admin\OrderPay::class)->name('orders.pay');
+    Route::get('/resources',  \App\Livewire\Admin\ResourceList::class)->name('resources.index');
+    Route::get('/resources/create', \App\Livewire\Admin\ResourceForm::class)->name('resources.create');
+    Route::get('/resources/{id}/edit', \App\Livewire\Admin\ResourceForm::class)->name('resources.edit');
+    Route::get('/users', \App\Livewire\Admin\UserList::class)->name('users.index');
+    Route::get('/users/create', \App\Livewire\Admin\UserForm::class)->name('users.create');
+    Route::get('/users/{id}/edit', \App\Livewire\Admin\UserForm::class)->name('users.edit');
+    Route::get('/users/{id}', \App\Livewire\Admin\UserShow::class)->name('users.show');
+    Route::get('/zones', \App\Livewire\Admin\ZoneList::class)->name('zones.index');
+    Route::get('/zones/create', \App\Livewire\Admin\ZoneForm::class)->name('zones.create');
+    Route::get('/zones/{id}/edit', \App\Livewire\Admin\ZoneForm::class)->name('zones.edit');
+    Route::get('/product-types', \App\Livewire\Admin\ProductTypeList::class)->name('product-types.index');
+    Route::get('/product-types/create', \App\Livewire\Admin\ProductTypeForm::class)->name('product-types.create');
+    Route::get('/product-types/{id}/edit', \App\Livewire\Admin\ProductTypeForm::class)->name('product-types.edit');
+
     /**
      * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
      */
 
     // CRUD маршруты
-    Route::resource('users', UserController::class);
-    Route::resource('product-types', ProductTypeController::class);
+//  Route::resource('users', UserController::class);
+//  Route::resource('product-types', ProductTypeController::class);
     Route::resource('product-models', ProductModelController::class);
     Route::resource('places', PlaceController::class);
-    Route::resource('zones', ZoneController::class);
+//  Route::resource('zones', ZoneController::class);
     Route::resource('price-rules', PriceRuleController::class);
-    Route::resource('resources', ResourceController::class);
+ //   Route::resource('resources', ResourceController::class);
 
 });
 

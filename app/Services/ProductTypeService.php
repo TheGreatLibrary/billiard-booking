@@ -3,13 +3,20 @@
 namespace App\Services;
 
 use App\Models\ProductType;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class ProductTypeService
 {
-    public function getAll()
+    public function validate(array $data, ?ProductType $type = null): array
     {
-        return ProductType::orderBy('name')->paginate(15);
+        return validator($data, [
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('product_types', 'name')->ignore($type?->id),
+            ],
+        ])->validate();
     }
 
     public function create(array $data): ProductType
@@ -17,23 +24,32 @@ class ProductTypeService
         return ProductType::create($data);
     }
 
-    public function update(ProductType $productType, array $data): ProductType
+    public function update(ProductType $type, array $data): bool
     {
-        $productType->update($data);
-        return $productType;
+        return $type->update($data);
     }
 
-    public function delete(ProductType $productType): void
+    public function delete(ProductType $type): bool
     {
-        $productType->delete();
+        return $type->delete();
     }
 
-    public function validate(array $data, ?ProductType $productType = null): array
+    public function deleteById($id): bool
     {
-        $id = $productType?->id ?? 'NULL';
-
-        return validator($data, [
-            'name' => "required|string|max:255|unique:product_types,name,{$id}",
-        ])->validate();
+        $type = ProductType::findOrFail($id);
+        return $type->delete();
     }
+
+    public function getAll()
+    {
+        return ProductType::latest()->paginate(10);
+    }
+
+public function search($term)
+{
+    return ProductType::query()
+        ->when($term, fn($q) => $q->where('name', 'like', "%{$term}%"))
+        ->latest()
+        ->paginate(10);
+}
 }
