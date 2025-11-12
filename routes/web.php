@@ -64,12 +64,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/dashboard', \App\Livewire\Admin\AdminDashboard::class)->name('dashboard');
 
     Route::get('/bookings', \App\Livewire\Admin\BookingList::class)->name('bookings.index');
-    Route::get('/bookings/create', \App\Livewire\Admin\BookingForm::class)->name('bookings.create');
+    Route::get('/bookings/create', \App\Livewire\Admin\BookingCreate::class)->name('bookings.create');
     Route::get('/bookings/{booking}/edit', \App\Livewire\Admin\BookingEditForm::class)->name('bookings.edit');
     Route::get('/bookings/{booking}', \App\Livewire\Admin\BookingShow::class)->name('bookings.show'); 
-    Route::get('/orders/{order}', \App\Livewire\Admin\OrderShow::class)->name('orders.show');
-    Route::get('/orders', \App\Livewire\Admin\OrderList::class)->name('orders.index');
-    Route::get('/orders/{order}/pay', \App\Livewire\Admin\OrderPay::class)->name('orders.pay');
+    Route::get('/bookings/{booking}/pay', \App\Livewire\Admin\BookingPay::class) ->name('bookings.pay');
+
     Route::get('/resources',  \App\Livewire\Admin\ResourceList::class)->name('resources.index');
     Route::get('/resources/create', \App\Livewire\Admin\ResourceForm::class)->name('resources.create');
     Route::get('/resources/{id}/edit', \App\Livewire\Admin\ResourceForm::class)->name('resources.edit');
@@ -84,6 +83,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/product-types/create', \App\Livewire\Admin\ProductTypeForm::class)->name('product-types.create');
     Route::get('/product-types/{id}/edit', \App\Livewire\Admin\ProductTypeForm::class)->name('product-types.edit');
 
+    Route::get('/places', \App\Livewire\Admin\PlaceIndex::class)->name('places.index');
+    Route::get('/places/create', \App\Livewire\Admin\PlaceCreate::class)->name('places.create');
+    Route::get('/places/{place}/edit', \App\Livewire\Admin\PlaceEdit::class)->name('places.edit');
+
     /**
      * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
      */
@@ -92,7 +95,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 //  Route::resource('users', UserController::class);
 //  Route::resource('product-types', ProductTypeController::class);
     Route::resource('product-models', ProductModelController::class);
-    Route::resource('places', PlaceController::class);
+   // Route::resource('places', PlaceController::class);
 //  Route::resource('zones', ZoneController::class);
     Route::resource('price-rules', PriceRuleController::class);
  //   Route::resource('resources', ResourceController::class);

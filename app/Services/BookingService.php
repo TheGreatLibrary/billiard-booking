@@ -1,320 +1,311 @@
-<?php
+<?php 
 
 namespace App\Services;
 
-use App\Models\{
-    Booking, Resource, ProductModel, PriceRule, Zone, Place
-};
+use App\Models\{Booking, Resource, ProductModel, Place, User};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class BookingService
 {
+    public function __construct(
+        private PriceCalculator $priceCalculator
+    ) {}
+
     /**
-     * Создание бронирования (раньше было в контроллере -> store)
-     * Возвращает созданный Booking
+     * Получить доступные слоты для стола на дату
+     * 
+     * @param Resource $resource
+     * @param string $date формат Y-m-d
+     * @return array ['12:00' => ['available' => true, 'price' => 50000], ...]
      */
-    public function createBooking(array $data): Booking
+    public function getAvailableSlots(Resource $resource, string $date): array
     {
-        DB::beginTransaction();
-        try {
-            // 1. Создаём бронирование
-            $booking = Booking::create([
-                'user_id' => $data['user_id'],
-                'place_id' => $data['place_id'],
-                'starts_at' => $data['starts_at'],
-                'ends_at' => $data['ends_at'],
-                'status' => $data['status'],
-                'comment' => $data['notes'] ?? null,
-            ]);
-
-            $startsAt = Carbon::parse($data['starts_at']);
-            $endsAt = Carbon::parse($data['ends_at']);
-            $minutes = $startsAt->diffInMinutes($endsAt);
-
-            // Находим ценовое правило один раз
-            $priceRule = $this->findPriceRule(
-                $data['place_id'],
-                $data['zone_id'],
-                $startsAt
-            );
-
-            $ruleKind = $priceRule ? $priceRule->kind : 'coef';
-            $ruleValue = $priceRule ? (float) $priceRule->value : 1.0;
-
-            $totalAmount = 0;
-            $bookingResources = [];
-
-            // 2. Создаём booking_resource для каждого стола
-            foreach ($data['resource_ids'] as $resourceId) {
-                $resource = Resource::with(['model', 'zone'])->findOrFail($resourceId);
-
-                $basePrice = (int) $resource->model->base_price_hour;
-                $zoneCoef = (float) $resource->zone->price_coef;
-
-                // Рассчитываем цену за этот стол
-                if ($ruleKind === 'coef') {
-                    $hourPrice = $basePrice * $zoneCoef * $ruleValue;
-                } else {
-                    $hourPrice = $ruleValue;
-                }
-
-                $amount = (int) round(($hourPrice / 60) * $minutes);
-                $totalAmount += $amount;
-
-                // Создаём запись booking_resource
-                $bookingResource = $booking->bookingResources()->create([
-                    'resource_id' => $resourceId,
-                    'starts_at' => $data['starts_at'],
-                    'ends_at' => $data['ends_at'],
-                    'hour_price_snapshot' => $basePrice,
-                    'rule_kind' => $ruleKind,
-                    'rule_value' => $ruleValue,
-                    'zone_coef_snapshot' => $zoneCoef,
-                    'minutes' => $minutes,
-                    'amount' => $amount,
-                ]);
-
-                $bookingResources[] = $bookingResource;
+        $slots = [];
+        $startHour = 12;
+        $endHour = 28; // 04:00 следующего дня = 24 + 4
+        
+        $currentDate = Carbon::parse($date);
+        
+        // Получаем занятые слоты
+        $bookedSlots = DB::table('booking_slots')
+            ->join('bookings', 'bookings.id', '=', 'booking_slots.booking_id')
+            ->where('bookings.resource_id', $resource->id)
+            ->where('booking_slots.slot_date', $date)
+            ->whereIn('bookings.payment_status', ['pending', 'paid']) // не учитываем отмененные
+            ->pluck('slot_time')
+            ->toArray();
+        
+        for ($hour = $startHour; $hour < $endHour; $hour++) {
+            $actualHour = $hour >= 24 ? $hour - 24 : $hour;
+            $time = sprintf('%02d:00', $actualHour);
+            $slotDateTime = $currentDate->copy();
+            
+            if ($hour >= 24) {
+                $slotDateTime->addDay();
             }
-
-            // 3. Создаём заказ
-            $order = $booking->order()->create([
-                'user_id' => $data['user_id'],
-                'place_id' => $data['place_id'],
-                'total_amount' => $totalAmount, // пока только столы
-            ]);
-
-            // 4. Создаём order_items для столов (type = 'table_time')
-            foreach ($bookingResources as $br) {
-                $order->items()->create([
-                    'type' => 'table_time',
-                    'booking_resource_id' => $br->id,
-                    'qty' => 1,
-                    'price_each' => null,
-                    'amount' => $br->amount,
-                ]);
-            }
-
-            // 5. Добавляем оборудование (type = 'equipment')
-            if (!empty($data['equipment'])) {
-                foreach ($data['equipment'] as $equipmentData) {
-                    if (empty($equipmentData['model_id'])) {
-                        continue; // пропускаем пустые строки
-                    }
-
-                    $productModel = ProductModel::findOrFail($equipmentData['model_id']);
-                    $qty = (int) $equipmentData['qty'];
-                    $priceEach = (int) $productModel->base_price_hour;
-                    $equipmentAmount = $priceEach * $qty;
-
-                    $order->items()->create([
-                        'type' => 'equipment',
-                        'booking_resource_id' => null,
-                        'product_model_id' => $equipmentData['model_id'],
-                        'qty' => $qty,
-                        'price_each' => $priceEach,
-                        'amount' => $equipmentAmount,
-                    ]);
-
-                    $totalAmount += $equipmentAmount;
-                }
-
-                // Обновляем общую сумму заказа
-                $order->update(['total_amount' => $totalAmount]);
-            }
-
-            DB::commit();
-            return $booking;
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Booking creation failed: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
-            throw $e;
-        }
-    }
-
-    /**
-     * Поиск подходящего ценового правила
-     */
-    public function findPriceRule($placeId, $zoneId, Carbon $datetime)
-    {
-        $dow = $datetime->dayOfWeek;
-        $time = $datetime->format('H:i');
-
-        return PriceRule::where('place_id', $placeId)
-            ->where('active', 1)
-            ->where(function($q) use ($zoneId) {
-                $q->whereNull('zone_id')->orWhere('zone_id', $zoneId);
-            })
-            ->where(function($q) use ($dow) {
-                $q->whereNull('dow')->orWhere('dow', $dow);
-            })
-            ->where(function($q) use ($time) {
-                $q->whereNull('time_from')
-                  ->orWhere(function($qq) use ($time) {
-                      $qq->where('time_from', '<=', $time)
-                         ->where('time_to', '>', $time);
-                  });
-            })
-            ->orderByRaw('zone_id IS NOT NULL DESC')
-            ->orderByRaw('dow IS NOT NULL DESC')
-            ->orderByRaw('time_from IS NOT NULL DESC')
-            ->first();
-    }
-
-    /**
-     * AJAX: получить зоны по place
-     */
-    public function getZonesByPlace(Place $place)
-    {
-        return Zone::where('place_id', $place->id)->get();
-    }
-
-    /**
-     * AJAX: получить столы по zone (подготовленный формат)
-     */
-    public function getTablesByZone(Zone $zone)
-    {
-        return Resource::join('product_models', 'resources.model_id', '=', 'product_models.id')
-            ->where('resources.zone_id', $zone->id)
-            ->where('resources.state_id', 1) // active
-            ->select(
-                'resources.id',
-                'resources.code as name',
-                'resources.note',
-                'product_models.name as model_name'
-            )
-            ->get()
-            ->map(function($table) {
-                return [
-                    'id' => $table->id,
-                    'name' => $table->name ?: $table->model_name,
-                    'description' => $table->model_name . ' - ' . ($table->note ?: 'Стол для бильярда')
-                ];
-            });
-    }
-
-    /**
-     * AJAX: получить оборудование по place
-     */
-    public function getEquipmentByPlace(Place $place)
-    {
-        return ProductModel::select('id', 'name', 'base_price_hour as price')
-            ->get();
-    }
-
-    /**
-     * Обновление бронирования (раньше было в контроллере -> update)
-     */
-    public function updateBooking(Booking $booking, array $validated)
-    {
-        DB::beginTransaction();
-        try {
-            // 1. Обновляем основное бронирование
-            $booking->update([
-                'user_id' => $validated['user_id'],
-                'place_id' => $validated['place_id'],
-                'starts_at' => $validated['starts_at'],
-                'ends_at' => $validated['ends_at'],
-                'status' => $validated['status'],
-                'comment' => $validated['notes'] ?? null,
-            ]);
-
-            // 2. Проверяем, изменился ли стол или время
-            $firstBookingResource = $booking->bookingResources->first();
-
-            $needRecalculate = false;
-            if ($firstBookingResource) {
-                $needRecalculate =
-                    $firstBookingResource->resource_id != $validated['resource_id'] ||
-                    $firstBookingResource->starts_at != $validated['starts_at'] ||
-                    $firstBookingResource->ends_at != $validated['ends_at'];
-            }
-
-            if ($needRecalculate) {
-                // Пересчитываем цену
-                $resource = Resource::with(['model', 'zone'])->findOrFail($validated['resource_id']);
-                $startsAt = Carbon::parse($validated['starts_at']);
-                $endsAt = Carbon::parse($validated['ends_at']);
-                $minutes = $startsAt->diffInMinutes($endsAt);
-
-                $priceRule = $this->findPriceRule(
-                    $validated['place_id'],
-                    $validated['zone_id'],
-                    $startsAt
+            $slotDateTime->setTime($actualHour, 0);
+            
+            // Проверяем доступность
+            $isAvailable = !in_array($time, $bookedSlots);
+            
+            // Считаем цену через PriceCalculator
+            $price = 0;
+            if ($isAvailable) {
+                $slotStart = $slotDateTime->copy();
+                $slotEnd = $slotDateTime->copy()->addHour();
+                
+                $priceData = $this->priceCalculator->calculateTablePrice(
+                    $resource,
+                    $slotStart,
+                    $slotEnd,
+                    $resource->place_id
                 );
-
-                $basePrice = (int) $resource->model->base_price_hour;
-                $zoneCoef = (float) $resource->zone->price_coef;
-
-                if ($priceRule) {
-                    $ruleKind = $priceRule->kind;
-                    $ruleValue = (float) $priceRule->value;
-                } else {
-                    $ruleKind = 'coef';
-                    $ruleValue = 1.0;
-                }
-
-                if ($ruleKind === 'coef') {
-                    $hourPrice = $basePrice * $zoneCoef * $ruleValue;
-                } else {
-                    $hourPrice = $ruleValue;
-                }
-
-                $amount = (int) round(($hourPrice / 60) * $minutes);
-
-                // 3. Обновляем booking_resource
-                if ($firstBookingResource) {
-                    $firstBookingResource->update([
-                        'resource_id' => $validated['resource_id'],
-                        'starts_at' => $validated['starts_at'],
-                        'ends_at' => $validated['ends_at'],
-                        'hour_price_snapshot' => $basePrice,
-                        'rule_kind' => $ruleKind,
-                        'rule_value' => $ruleValue,
-                        'zone_coef_snapshot' => $zoneCoef,
-                        'minutes' => $minutes,
-                        'amount' => $amount,
-                    ]);
-
-                    // 4. Обновляем заказ если есть
-                    if ($booking->order) {
-                        $booking->order->update([
-                            'user_id' => $validated['user_id'],
-                            'place_id' => $validated['place_id'],
-                            'total_amount' => $amount,
-                        ]);
-
-                        // 5. Обновляем order_item
-                        $orderItem = $booking->order->items()
-                            ->where('type', 'table_time')
-                            ->where('booking_resource_id', $firstBookingResource->id)
-                            ->first();
-
-                        if ($orderItem) {
-                            $orderItem->update(['amount' => $amount]);
-                        }
-                    }
-                }
-            } else {
-                // Если время/стол не изменились, просто обновляем user/place в заказе
-                if ($booking->order) {
-                    $booking->order->update([
-                        'user_id' => $validated['user_id'],
-                        'place_id' => $validated['place_id'],
-                    ]);
-                }
+                
+                $price = $priceData['amount'];
             }
-
-            DB::commit();
-            return $booking;
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Booking update failed: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
-            throw $e;
+            
+            $slots[$time] = [
+                'available' => $isAvailable,
+                'price' => $price, // руб*100
+                'datetime' => $slotDateTime->toIso8601String(),
+            ];
         }
+        
+        return $slots;
     }
+
+    /**
+     * Создать временное бронирование (pending)
+     * 
+     * @param array $data
+     * @return Booking
+     */
+    public function createPendingBooking(array $data): Booking
+    {
+        // Валидация: минимум 1 час
+        if (empty($data['slots']) || count($data['slots']) < 1) {
+            throw new \Exception('Необходимо выбрать минимум 1 час');
+        }
+
+        $resource = Resource::with(['model', 'zone', 'place'])->findOrFail($data['resource_id']);
+        
+        // Проверяем доступность всех слотов
+        $date = $data['date']; // Y-m-d
+        $requestedSlots = $data['slots']; // ['12:00', '13:00', '15:00']
+        
+        $availableSlots = $this->getAvailableSlots($resource, $date);
+        
+        foreach ($requestedSlots as $time) {
+            if (!isset($availableSlots[$time]) || !$availableSlots[$time]['available']) {
+                throw new \Exception("Слот {$time} недоступен");
+            }
+        }
+        
+        // Определяем пользователя или гостя
+        $userId = $data['user_id'] ?? null;
+        $guestData = [];
+        
+        if (!$userId) {
+            $guestData = [
+                'guest_name' => $data['guest_name'] ?? null,
+                'guest_email' => $data['guest_email'] ?? null,
+                'guest_phone' => $data['guest_phone'] ?? null,
+            ];
+        }
+        
+        // Считаем общую сумму за столы
+        $totalAmount = 0;
+        $slotRecords = [];
+        
+        foreach ($requestedSlots as $time) {
+            $totalAmount += $availableSlots[$time]['price'];
+            $slotRecords[] = [
+                'slot_date' => $date,
+                'slot_time' => $time,
+                'slot_datetime' => Carbon::parse($availableSlots[$time]['datetime']),
+            ];
+        }
+        
+        // Создаем бронирование
+        $booking = Booking::create([
+            'user_id' => $userId,
+            'place_id' => $resource->place_id,
+            'resource_id' => $resource->id,
+            'status' => 'pending',
+            'payment_status' => 'pending',
+            'total_amount' => $totalAmount,
+            'comment' => $data['comment'] ?? null,
+            'expires_at' => now()->addMinutes(30), // TTL 30 минут
+             'created_at' => now(),
+            ...$guestData,
+        ]);
+        
+        // Создаем слоты
+        foreach ($slotRecords as $slot) {
+            $booking->slots()->create($slot);
+        }
+        
+        // Добавляем оборудование (если есть)
+        if (!empty($data['equipment'])) {
+            $totalAmount = $this->addEquipment($booking, $data['equipment'], $totalAmount);
+            $booking->update(['total_amount' => $totalAmount]);
+        }
+        
+        return $booking->load(['slots', 'equipment', 'resource']);
+    }
+
+    /**
+     * Добавить оборудование к бронированию
+     */
+    private function addEquipment(Booking $booking, array $equipment, int $currentTotal): int
+    {
+        foreach ($equipment as $item) {
+            if (empty($item['model_id'])) continue;
+
+            $productModel = ProductModel::findOrFail($item['model_id']);
+            $qty = (int) ($item['qty'] ?? 1);
+            $priceEach = (int) ($productModel->base_price_each ?? $productModel->base_price_hour);
+            $amount = $priceEach * $qty;
+
+            $booking->equipment()->create([
+                'product_model_id' => $item['model_id'],
+                'qty' => $qty,
+                'price_each' => $priceEach,
+                'amount' => $amount,
+            ]);
+
+            $currentTotal += $amount;
+        }
+
+        return $currentTotal;
+    }
+
+    /**
+     * Оплатить бронирование
+     * 
+     * @param Booking $booking
+     * @param string $paymentMethod 'card' | 'online'
+     * @return Booking
+     */
+    public function payBooking(Booking $booking, string $paymentMethod): Booking
+    {
+        if ($booking->payment_status !== 'pending') {
+            throw new \Exception('Бронирование уже оплачено или отменено');
+        }
+
+        // Проверяем, не истек ли срок
+        if ($booking->expires_at && $booking->expires_at->isPast()) {
+            $this->cancelExpiredBooking($booking);
+            throw new \Exception('Время бронирования истекло');
+        }
+
+        $booking->update([
+            'status' => 'confirmed',
+            'payment_status' => 'paid',
+            'payment_method' => $paymentMethod,
+            'paid_at' => now(),
+            'expires_at' => null, // убираем TTL
+        ]);
+
+        return $booking->fresh();
+    }
+
+    /**
+     * Отменить истекшее бронирование
+     */
+    public function cancelExpiredBooking(Booking $booking): void
+    {
+        $booking->update([
+            'status' => 'canceled',
+            'payment_status' => 'canceled',
+        ]);
+        
+        // Можно удалить, если хотите освободить БД
+        // $booking->delete();
+    }
+
+    /**
+     * Завершить бронирование (когда время истекло)
+     */
+    public function finishBooking(Booking $booking): Booking
+    {
+        if ($booking->payment_status !== 'paid') {
+            throw new \Exception('Можно завершить только оплаченное бронирование');
+        }
+
+        $booking->update(['status' => 'finished']);
+        
+        return $booking->fresh();
+    }
+
+    /**
+     * Возврат средств
+     */
+    public function refundBooking(Booking $booking): Booking
+    {
+        if ($booking->payment_status !== 'paid') {
+            throw new \Exception('Можно вернуть только оплаченное бронирование');
+        }
+
+        $booking->update([
+            'status' => 'canceled',
+            'payment_status' => 'refunded',
+        ]);
+
+        return $booking->fresh();
+    }
+
+    /**
+     * Получить все столы для места с координатами на сетке
+     */
+    public function getPlaceResources(int $placeId): array
+    {
+        $place = Place::findOrFail($placeId);
+        
+        $resources = Resource::where('place_id', $placeId)
+            ->where('state_id', 1) // только доступные
+            ->whereNotNull('grid_x') // только с координатами
+            ->with(['model', 'zone'])
+            ->get()
+            ->map(fn($r) => [
+                'id' => $r->id,
+                'code' => $r->code,
+                'model_name' => $r->model->name,
+                'zone_name' => $r->zone->name ?? null,
+                'grid_x' => $r->grid_x,
+                'grid_y' => $r->grid_y,
+                'grid_width' => $r->grid_width,
+                'grid_height' => $r->grid_height,
+                'rotation' => $r->rotation, // 0, 90, 180, 270
+            ]);
+
+        return [
+            'place' => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'grid_width' => $place->grid_width,
+                'grid_height' => $place->grid_height,
+                'hall_image' => $place->hall_image,
+            ],
+            'resources' => $resources,
+        ];
+    }
+
+    /**
+     * Автоочистка истекших бронирований (для планировщика)
+     */
+    public function cleanupExpiredBookings(): int
+    {
+        $expired = Booking::where('payment_status', 'pending')
+            ->where('expires_at', '<', now())
+            ->get();
+
+        foreach ($expired as $booking) {
+            $this->cancelExpiredBooking($booking);
+        }
+
+        return $expired->count();
+    }
+
 }

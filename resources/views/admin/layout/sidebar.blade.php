@@ -23,9 +23,6 @@
         <a href="{{ route('admin.bookings.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.bookings.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Бронирования
         </a>
-        <a href="{{ route('admin.orders.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.orders.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
-            Заказы
-        </a>
         <a href="{{ route('admin.product-types.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.product-types.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Типы продуктов
         </a>

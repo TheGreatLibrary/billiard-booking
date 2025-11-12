@@ -75,39 +75,41 @@
             </div>
 
             <!-- Оборудование -->
-            <div class="md:col-span-2">
-                <label class="block text-sm font-medium mb-2">Дополнительное оборудование</label>
-                
-                @if(!empty($equipment) && count($equipment) > 0)
-                    <div class="grid grid-cols-3 gap-3 mb-4">
-                        @foreach($equipment as $eq)
-                            <div class="border rounded-lg p-3">
-                                <div class="font-medium">{{ $eq->name }}</div>
-                                <div class="text-sm text-gray-500">{{ $eq->base_price_hour }} ₽/час</div>
-                                <button type="button" 
-                                        wire:click="addEquipment({{ $eq->id }})"
-                                        class="mt-2 w-full bg-blue-500 text-white px-3 py-1 rounded text-sm">
-                                    + Добавить
-                                </button>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-
-                <!-- Выбранное оборудование -->
-                @foreach($selectedEquipment as $index => $item)
-                    <div class="flex space-x-2 items-center bg-blue-50 p-3 rounded-lg mb-2">
-                        <div class="flex-1">
-                            <div class="font-medium">{{ $item['name'] }}</div>
-                            <div class="text-sm">{{ $item['price'] }} ₽/час</div>
+           <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-2">Дополнительное оборудование</label>
+            
+            @if(!empty($equipment) && count($equipment) > 0)
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    @foreach($equipment as $eq)
+                        <div class="border rounded-lg p-3">
+                            <div class="font-medium">{{ $eq['name'] }}</div>
+                            <div class="text-sm text-gray-500">{{ $eq['price'] }} ₽/час</div>
+                            <button type="button" 
+                                    wire:click="addEquipment({{ $eq['id'] }})"
+                                    class="mt-2 w-full bg-blue-500 text-white px-3 py-1 rounded text-sm">
+                                + Добавить
+                            </button>
                         </div>
-                        <input type="number" wire:model="selectedEquipment.{{ $index }}.qty" 
-                               min="1" class="w-20 border rounded px-2 py-1">
-                        <button type="button" wire:click="removeEquipment({{ $index }})" 
-                                class="bg-red-500 text-white px-3 py-2 rounded">✕</button>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-gray-400 text-center py-4">Оборудование не найдено</p>
+            @endif
+
+            <!-- Выбранное оборудование -->
+            @foreach($selectedEquipment as $index => $item)
+                <div class="flex space-x-2 items-center bg-blue-50 p-3 rounded-lg mb-2">
+                    <div class="flex-1">
+                        <div class="font-medium">{{ $item['name'] }}</div>
+                        <div class="text-sm">{{ $item['price'] }} ₽/час</div>
                     </div>
-                @endforeach
-            </div>
+                    <input type="number" wire:model="selectedEquipment.{{ $index }}.qty" 
+                        min="1" class="w-20 border rounded px-2 py-1">
+                    <button type="button" wire:click="removeEquipment({{ $index }})" 
+                            class="bg-red-500 text-white px-3 py-2 rounded">✕</button>
+                </div>
+            @endforeach
+        </div>
 
             <!-- Статус -->
             <div>

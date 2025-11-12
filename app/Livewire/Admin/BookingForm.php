@@ -3,7 +3,7 @@
 namespace App\Livewire\Admin;
 
 use Livewire\Component;
-use App\Models\{User, Place, Zone, Resource, ProductModel};
+use App\Models\{User, Place, Zone, Resource, ProductModel, ProductType};
 use App\Services\BookingService;
 
 class BookingForm extends Component
@@ -40,24 +40,44 @@ class BookingForm extends Component
     public function updatedPlaceId($value)
     {
         $this->zones = Zone::where('place_id', $value)->get();
-        $this->equipment = ProductModel::all(); // или фильтр по месту
+        $this->equipment = []; //ProductModel::all(); // или фильтр по месту
         $this->zone_id = null;
         $this->tables = [];
         $this->resource_ids = [];
     }
 
-    public function updatedZoneId($value)
+   public function updatedZoneId($value)
     {
-        $this->tables = Resource::where('zone_id', $value)
-            ->where('state_id', 1)
-            ->with('model')
-            ->get()
-            ->map(fn($t) => [
-                'id' => $t->id,
-                'name' => $t->code ?: $t->model->name,
-                'description' => $t->model->name
-            ]);
-        
+        // Получаем столы через более чистый запрос
+        $tableType = ProductType::where('name', 'table')->first();
+        $equipmentType = ProductType::where('name', 'equipment')->first();
+
+        // Столы
+        $this->tables = $tableType 
+            ? Resource::where('zone_id', $value)
+                ->where('state_id', 1)
+                ->whereHas('model.type', function($query) use ($tableType) {
+                    $query->where('id', $tableType->id);
+                })
+                ->with('model')
+                ->get()
+                ->map(fn($t) => [
+                    'id' => $t->id,
+                    'name' => $t->code ?: $t->model->name,
+                    'description' => $t->model->name
+                ])
+            : [];
+
+        // Оборудование
+        $this->equipment = $equipmentType 
+            ? $equipmentType->models()->get()->map(fn($e) => [
+                'id' => $e->id,
+                'name' => $e->name,
+                'description' => $e->name,
+                'price' => $e->base_price_hour ?? $e->base_price_each
+            ])
+            : [];
+
         $this->resource_ids = [];
     }
 

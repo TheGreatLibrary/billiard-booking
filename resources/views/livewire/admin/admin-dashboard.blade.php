@@ -43,7 +43,7 @@
                 <h3 class="text-sm font-medium">Бронирования</h3>
                 <span class="text-2xl">📅</span>
             </div>
-            <div class="text-3xl font-bold mb-1">{{ $total['bookings'] }}</div>
+            <div class="text-3xl font-bold mb-1">{{ $total['orders'] }}</div>
             <div class="text-sm text-black opacity-90">Всего бронирований</div>
         </div>
 
@@ -178,11 +178,6 @@
            class="bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg shadow-md text-center transition">
             <div class="text-3xl mb-2">➕</div>
             <div class="font-semibold text-lg">Новое бронирование</div>
-        </a>
-        <a href="{{ route('admin.orders.index') }}" 
-           class="bg-green-500 hover:bg-green-600 text-white p-6 rounded-lg shadow-md text-center transition">
-            <div class="text-3xl mb-2">🛒</div>
-            <div class="font-semibold text-lg">Все заказы</div>
         </a>
         <a href="{{ route('admin.bookings.index') }}" 
            class="bg-purple-500 hover:bg-purple-600 text-white p-6 rounded-lg shadow-md text-center transition">

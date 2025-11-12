@@ -1,48 +1,68 @@
 <div>
-   <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold">Оплата заказа #{{ $order->id }}</h1>
+            <h1 class="text-2xl font-bold">Оплата бронирования #{{ $booking->id }}</h1>
             <p class="text-gray-600">Выберите способ оплаты</p>
         </div>
-        <a href="{{ route('admin.orders.show', $order) }}" 
+        <a href="{{ route('admin.bookings.show', $booking) }}" 
            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
-            ← Назад к заказу
+            ← Назад
         </a>
     </div>
 
     <div class="max-w-4xl mx-auto">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Информация о заказе -->
+            <!-- Информация о бронировании -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-lg font-semibold mb-4">📋 Детали заказа</h2>
+                    <h2 class="text-lg font-semibold mb-4">📋 Детали бронирования</h2>
                     
                     <div class="space-y-3">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Клиент:</span>
-                            <span class="font-medium">{{ $order->user->name }}</span>
+                            <span class="font-medium">{{ $booking->getClientName() }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Email:</span>
-                            <span>{{ $order->user->email }}</span>
+                            <span>{{ $booking->getClientEmail() ?? 'Не указан' }}</span>
+                        </div>
+                        @if($booking->getClientPhone())
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Телефон:</span>
+                            <span>{{ $booking->getClientPhone() }}</span>
+                        </div>
+                        @endif
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Место:</span>
+                            <span>{{ $booking->place->name }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Бронирование:</span>
-                            <a href="{{ route('admin.bookings.show', $order->booking_id) }}" 
-                               class="text-blue-600 hover:underline">
-                                #{{ $order->booking_id }}
-                            </a>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Время:</span>
-                            <span>{{ $order->booking->starts_at }} - {{ $order->booking->ends_at }}</span>
+                            <span class="text-gray-600">Стол:</span>
+                            <span>{{ $booking->resource->code }} - {{ $booking->resource->model->name }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Позиции заказа -->
+                <!-- Временные слоты -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">🕐 Забронированное время</h2>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($booking->slots as $slot)
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                {{ \Carbon\Carbon::parse($slot->slot_datetime)->format('d.m.Y H:i') }}
+                            </span>
+                        @endforeach
+                    </div>
+                    <p class="text-sm text-gray-500 mt-3">
+                        Всего часов: {{ $booking->slots->count() }}
+                    </p>
+                </div>
+
+                <!-- Оборудование -->
+                @if($booking->equipment->count() > 0)
                 <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-lg font-semibold mb-4">📦 Позиции</h2>
+                    <h2 class="text-lg font-semibold mb-4">📦 Дополнительное оборудование</h2>
                     
                     <table class="w-full">
                         <thead class="bg-gray-50">
@@ -53,29 +73,24 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y">
-                            @foreach($order->items as $item)
+                            @foreach($booking->equipment as $item)
                             <tr>
                                 <td class="px-4 py-3">
-                                    @if($item->type === 'table_time')
-                                        <span class="font-medium">Аренда стола</span>
-                                    @else
-                                        <span class="font-medium">{{ $item->productModel->name }}</span>
-                                        <div class="text-xs text-gray-500">{{ number_format($item->price_each, 2) }} ₽ × {{ $item->qty }}</div>
-                                    @endif
+                                    <span class="font-medium">{{ $item->productModel->name }}</span>
+                                    <div class="text-xs text-gray-500">
+                                        {{ number_format($item->price_each / 100, 2) }} ₽ × {{ $item->qty }}
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">{{ $item->qty }}</td>
-                                <td class="px-4 py-3 text-right font-medium">{{ number_format($item->amount, 2) }} ₽</td>
+                                <td class="px-4 py-3 text-right font-medium">
+                                    {{ $item->getAmountFormatted() }}
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
-                        <tfoot class="bg-gray-50 font-bold">
-                            <tr>
-                                <td colspan="2" class="px-4 py-3 text-right">ИТОГО:</td>
-                                <td class="px-4 py-3 text-right text-xl text-green-600">{{ number_format($order->total_amount, 2) }} ₽</td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
+                @endif
             </div>
 
             <!-- Форма оплаты -->
@@ -123,7 +138,9 @@
                         <div class="mb-6 p-4 bg-gray-50 rounded-lg">
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-600">К оплате:</span>
-                                <span class="text-2xl font-bold text-green-600">{{ number_format($order->total_amount, 2) }} ₽</span>
+                                <span class="text-2xl font-bold text-green-600">
+                                    {{ $booking->getTotalAmountFormatted() }}
+                                </span>
                             </div>
                         </div>
 
@@ -132,11 +149,11 @@
                             <button type="submit" 
                                     wire:loading.attr="disabled"
                                     class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition">
-                                <span wire:loading.remove>✓ Оплатить {{ number_format($order->total_amount, 2) }} ₽</span>
+                                <span wire:loading.remove>✓ Оплатить {{ $booking->getTotalAmountFormatted() }}</span>
                                 <span wire:loading>⏳ Обработка...</span>
                             </button>
 
-                            <a href="{{ route('admin.orders.show', $order) }}" 
+                            <a href="{{ route('admin.bookings.show', $booking) }}" 
                                class="block w-full bg-gray-200 hover:bg-gray-300 text-gray-700 text-center py-3 rounded-lg transition">
                                 Отмена
                             </a>
@@ -145,7 +162,7 @@
 
                     <!-- Подсказка -->
                     <div class="mt-4 p-3 bg-blue-50 rounded text-xs text-blue-800">
-                        <strong>💡 Совет:</strong> После оплаты бронирование будет подтверждено и его нельзя будет редактировать.
+                        <strong>💡 Совет:</strong> После оплаты бронирование будет подтверждено.
                     </div>
                 </div>
             </div>

@@ -19,100 +19,72 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-sm text-gray-500">Имя</p>
-                        <p class="font-medium">{{ $booking->user->name }}</p>
+                        <p class="font-medium">{{ $booking->getClientName() }}</p>
                     </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Телефон</p>
-                        <p class="font-medium">{{ $booking->user->phone }}</p>
-                    </div>
-                    @if($booking->user->email)
                     <div>
                         <p class="text-sm text-gray-500">Email</p>
-                        <p class="font-medium">{{ $booking->user->email }}</p>
+                        <p class="font-medium">{{ $booking->getClientEmail() ?? 'Не указан' }}</p>
+                    </div>
+                    @if($booking->getClientPhone())
+                    <div>
+                        <p class="text-sm text-gray-500">Телефон</p>
+                        <p class="font-medium">{{ $booking->getClientPhone() }}</p>
                     </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Забронированные столы -->
+            <!-- Забронированный стол -->
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-lg font-semibold mb-4">Забронированные столы</h2>
+                <h2 class="text-lg font-semibold mb-4">Забронированный стол</h2>
                 
-                @foreach($booking->bookingResources as $br)
-                <div class="border-b pb-4 mb-4 last:border-b-0 last:mb-0 last:pb-0">
+                <div class="border-b pb-4 mb-4">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="font-medium text-lg">🎱 {{ $br->resource->code ?? 'Стол' }}</p>
-                            <p class="text-sm text-gray-500">{{ $br->resource->model->name }}</p>
+                            <p class="font-medium text-lg">🎱 {{ $booking->resource->code ?? 'Стол' }}</p>
+                            <p class="text-sm text-gray-500">{{ $booking->resource->model->name }}</p>
                             <p class="text-sm text-gray-600 mt-1">
-                                Зона: {{ $br->resource->zone->name }}
+                                Зона: {{ $booking->resource->zone->name ?? 'N/A' }}
                             </p>
                         </div>
                         <div class="text-right">
-                            <p class="text-2xl font-bold text-green-600">{{ number_format($br->amount, 0, ',', ' ') }} ₽</p>
-                            <p class="text-sm text-gray-500">{{ $br->minutes }} минут</p>
+                            <p class="text-2xl font-bold text-green-600">
+                                {{ $booking->getTotalAmountFormatted() }}
+                            </p>
                         </div>
                     </div>
-                    
-                    <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                            <span class="text-gray-500">Начало:</span>
-                            <span class="font-medium">{{ \Carbon\Carbon::parse($br->starts_at)->format('d.m.Y H:i') }}</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Окончание:</span>
-                            <span class="font-medium">{{ \Carbon\Carbon::parse($br->ends_at)->format('d.m.Y H:i') }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Детали ценообразования -->
-                    <details class="mt-3">
-                        <summary class="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
-                            Детали расчёта цены
-                        </summary>
-                        <div class="mt-2 p-3 bg-gray-50 rounded text-sm space-y-1">
-                            <p>Базовая цена/час: {{ number_format($br->hour_price_snapshot, 0, ',', ' ') }} ₽</p>
-                            <p>Коэффициент зоны: {{ $br->zone_coef_snapshot }}</p>
-                            <p>Правило: {{ $br->rule_kind }} = {{ $br->rule_value }}</p>
-                        </div>
-                    </details>
                 </div>
-                @endforeach
+
+                <!-- Временные слоты -->
+                <div class="mt-4">
+                    <p class="text-sm font-medium mb-2">Забронированное время:</p>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($booking->slots as $slot)
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                {{ \Carbon\Carbon::parse($slot->slot_datetime)->format('d.m.Y H:i') }}
+                            </span>
+                        @endforeach
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Всего часов: {{ $booking->slots->count() }}
+                    </p>
+                </div>
             </div>
 
-            <!-- Заказ (если есть) -->
-            @if($booking->order)
+            <!-- Дополнительное оборудование -->
+            @if($booking->equipment->count() > 0)
             <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold">Заказ</h2>
-                    <a href="{{ route('admin.orders.show', $booking->order) }}" 
-                       class="text-blue-600 hover:text-blue-800 text-sm">
-                        Посмотреть полностью →
-                    </a>
-                </div>
+                <h2 class="text-lg font-semibold mb-4">Дополнительное оборудование</h2>
                 
-                <div class="space-y-2">
-                    @foreach($booking->order->items as $item)
-                    <div class="flex justify-between items-center py-2 border-b last:border-b-0">
-                        <div>
-                            @if($item->type === 'table_time')
-                                <p class="font-medium">Аренда стола</p>
-                            @else
-                                <p class="font-medium">{{ $item->productModel->name }}</p>
-                                <p class="text-sm text-gray-500">x{{ $item->qty }}</p>
-                            @endif
-                        </div>
-                        <p class="font-semibold">{{ number_format($item->amount, 0, ',', ' ') }} ₽</p>
+                @foreach($booking->equipment as $item)
+                <div class="flex justify-between items-center py-2 border-b last:border-b-0">
+                    <div>
+                        <p class="font-medium">{{ $item->productModel->name }}</p>
+                        <p class="text-sm text-gray-500">x{{ $item->qty }}</p>
                     </div>
-                    @endforeach
-                    
-                    <div class="flex justify-between items-center pt-3 border-t-2 border-gray-300">
-                        <p class="font-bold text-lg">ИТОГО:</p>
-                        <p class="font-bold text-xl text-green-600">
-                            {{ number_format($booking->order->total_amount, 0, ',', ' ') }} ₽
-                        </p>
-                    </div>
+                    <p class="font-semibold">{{ $item->getAmountFormatted() }}</p>
                 </div>
+                @endforeach
             </div>
             @endif
         </div>
@@ -125,7 +97,7 @@
                 
                 <div class="space-y-4">
                     <div>
-                        <p class="text-sm text-gray-500 mb-1">Текущий статус</p>
+                        <p class="text-sm text-gray-500 mb-1">Статус бронирования</p>
                         <span class="inline-block px-3 py-1 text-sm font-semibold rounded
                             @if($booking->status === 'confirmed') bg-green-100 text-green-800
                             @elseif($booking->status === 'pending') bg-yellow-100 text-yellow-800
@@ -138,6 +110,31 @@
                     </div>
 
                     <div>
+                        <p class="text-sm text-gray-500 mb-1">Статус оплаты</p>
+                        <span class="inline-block px-3 py-1 text-sm font-semibold rounded
+                            @if($booking->payment_status === 'paid') bg-green-100 text-green-800
+                            @elseif($booking->payment_status === 'pending') bg-yellow-100 text-yellow-800
+                            @else bg-red-100 text-red-800
+                            @endif">
+                            {{ $booking->payment_status }}
+                        </span>
+                    </div>
+
+                    @if($booking->payment_method)
+                    <div>
+                        <p class="text-sm text-gray-500">Способ оплаты</p>
+                        <p class="font-medium">{{ $booking->payment_method }}</p>
+                    </div>
+                    @endif
+
+                    @if($booking->paid_at)
+                    <div>
+                        <p class="text-sm text-gray-500">Оплачено</p>
+                        <p class="font-medium">{{ $booking->paid_at->format('d.m.Y H:i') }}</p>
+                    </div>
+                    @endif
+
+                    <div>
                         <p class="text-sm text-gray-500">Место</p>
                         <p class="font-medium">{{ $booking->place->name }}</p>
                         <p class="text-sm text-gray-600">{{ $booking->place->address }}</p>
@@ -148,6 +145,13 @@
                         <p class="font-medium">{{ $booking->created_at->format('d.m.Y H:i') }}</p>
                     </div>
 
+                    @if($booking->expires_at)
+                    <div>
+                        <p class="text-sm text-gray-500">Истекает</p>
+                        <p class="font-medium text-orange-600">{{ $booking->expires_at->format('d.m.Y H:i') }}</p>
+                    </div>
+                    @endif
+
                     @if($booking->comment)
                     <div>
                         <p class="text-sm text-gray-500">Комментарий</p>
@@ -157,10 +161,12 @@
                 </div>
 
                 <div class="mt-6 space-y-2">
-                    <a href="{{ route('admin.bookings.edit', $booking) }}" 
-                       class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                        Редактировать
+                    @if($booking->canPay())
+                    <a href="{{ route('admin.bookings.pay', $booking) }}" 
+                       class="block w-full text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                        💳 Оплатить
                     </a>
+                    @endif
                     
                     <button wire:click="deleteBooking" 
                             wire:confirm="Вы уверены, что хотите удалить это бронирование?"

@@ -20,11 +20,10 @@ class AdminDashboard extends Component
     {
         // Основные показатели
         $this->total = [
-            'orders'        => Order::count(),
-            'orders_paid'   => Order::where('status', 'paid')->count(),
-            'orders_pending'=> Order::where('status', 'pending')->count(),
-            'amount'        => Order::where('status', 'paid')->sum('total_amount'),
-            'bookings'      => Booking::count(),
+            'orders'        => Booking::count(),
+            'orders_paid'   => Booking::where('status', 'paid')->count(),
+            'orders_pending'=> Booking::where('status', 'pending')->count(),
+            'amount'        => Booking::where('status', 'paid')->sum('total_amount'),
             'users'         => User::count(),
             'productTypes'  => ProductType::count(),
             'productModels' => ProductModel::count(),
@@ -35,14 +34,14 @@ class AdminDashboard extends Component
         ];
 
         // Статистика по статусам заказов
-        $this->statusStats = Order::select('status', DB::raw('COUNT(*) as count'))
+        $this->statusStats = Booking::select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
             ->get()
             ->keyBy('status')
             ->map(fn($item) => $item->count);
 
         // Разбивка по месяцам (SQLite) - оплаченные заказы
-        $this->monthly = Order::select(
+        $this->monthly = Booking::select(
                 DB::raw("strftime('%Y-%m', paid_at) as month"),
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(total_amount) as amount')
