@@ -83,6 +83,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/product-types', \App\Livewire\Admin\ProductTypeList::class)->name('product-types.index');
     Route::get('/product-types/create', \App\Livewire\Admin\ProductTypeForm::class)->name('product-types.create');
     Route::get('/product-types/{id}/edit', \App\Livewire\Admin\ProductTypeForm::class)->name('product-types.edit');
+    Route::get('/places', \App\Livewire\Admin\PlaceList::class)->name('places.list');
+    Route::get('/places/create', \App\Livewire\Admin\PlaceFormCreate::class)->name('places.form.create');
+    Route::get('/places/{place}/edit', \App\Livewire\Admin\PlaceFormEdit::class)->name('places.form.edit');
+    Route::get('/price-rules', \App\Livewire\Admin\PriceRuleList::class)->name('price-rules.index');
+    Route::get('/price-rules/create', \App\Livewire\Admin\PriceRuleForm::class)->name('price-rules.create');
+    Route::get('/price-rules/{rule}/edit', \App\Livewire\Admin\PriceRuleForm::class)->name('price-rules.edit');
+    Route::get('/product-models', \App\Livewire\Admin\ProductModelList::class)->name('product-models.index');
+    Route::get('/product-models/create', \App\Livewire\Admin\ProductModelForm::class)->name('product-models.create');
+    Route::get('/product-models/{model}/edit', \App\Livewire\Admin\ProductModelForm::class)->name('product-models.edit');
 
     /**
      * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
@@ -91,10 +100,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // CRUD маршруты
 //  Route::resource('users', UserController::class);
 //  Route::resource('product-types', ProductTypeController::class);
-    Route::resource('product-models', ProductModelController::class);
-    Route::resource('places', PlaceController::class);
+ //   Route::resource('product-models', ProductModelController::class);
+//    Route::resource('places', PlaceController::class);
 //  Route::resource('zones', ZoneController::class);
-    Route::resource('price-rules', PriceRuleController::class);
+ //   Route::resource('price-rules', PriceRuleController::class);
  //   Route::resource('resources', ResourceController::class);
 
 });

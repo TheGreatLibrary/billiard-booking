@@ -32,7 +32,7 @@
         <a href="{{ route('admin.product-models.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.product-models.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Модели продуктов
         </a>
-        <a href="{{ route('admin.places.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.places.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
+        <a href="{{ route('admin.places.list') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.places.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Места
         </a>
         <a href="{{ route('admin.zones.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.zones.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">

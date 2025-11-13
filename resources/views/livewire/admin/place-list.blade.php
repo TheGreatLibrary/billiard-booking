@@ -1,10 +1,7 @@
-@extends('admin.layout.app')
-
-@section('content')
-
- <h1 class="mb-4 text-xl font-bold">Локации (Places)</h1>
-    <a href="{{ route('admin.places.create') }}"
-       class="px-4 py-2 bg-blue-600 text-white rounded">Добавить</a>
+<div class="space-y-6">
+    <h1 class="mb-4 text-xl font-bold">Локации (Places)</h1>
+    <a href="{{ route('admin.places.form.create') }}"
+    class="px-4 py-2 bg-blue-600 text-white rounded">Добавить</a>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -27,20 +24,19 @@
                 <td class="border px-2 py-1">{{ $place->name }}</td>
                 <td class="border px-2 py-1">{{ $place->address }}</td>
                 <td class="border px-2 py-1">{{ Str::limit($place->description, 50) }}</td>
-                <td  class="border px-2 py-1 text-right">
-                    <a href="{{ route('admin.places.edit', $place) }}" class="btn btn-sm btn-warning">Редактировать</a>
-                    <form action="{{ route('admin.places.destroy', $place) }}" method="POST" class="d-inline"
-                          onsubmit="return confirm('Удалить?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-danger">Удалить</button>
-                    </form>
+                <td class="border px-2 py-1 text-right">
+                    <a href="{{ route('admin.places.form.edit', $place) }}" class="btn btn-sm btn-warning">Редактировать</a>
+                    <button wire:click="delete({{ $place->id }})" 
+                            wire:confirm="Удалить?"
+                            class="btn btn-sm btn-danger text-red-600">Удалить</button>
                 </td>
             </tr>
         @endforeach
         </tbody>
     </table>
 
-     <div class="mt-4">
+    <div class="mt-4">
         {{ $places->links() }}
     </div>
-@endsection
+
+</div>
