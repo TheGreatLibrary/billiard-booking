@@ -15,6 +15,8 @@ use App\Http\Controllers\Admin\PlaceController;
 use App\Http\Controllers\Admin\ZoneController;
 
 
+use App\Livewire\Admin\HallEditor;
+
 // Главная страница
 Route::view('/', 'welcome')->name('home');
 
@@ -86,6 +88,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/places', \App\Livewire\Admin\PlaceIndex::class)->name('places.index');
     Route::get('/places/create', \App\Livewire\Admin\PlaceCreate::class)->name('places.create');
     Route::get('/places/{place}/edit', \App\Livewire\Admin\PlaceEdit::class)->name('places.edit');
+
+    Route::get('/halls-editor', HallEditor::class)->name('halls.editor');
 
     /**
      * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
