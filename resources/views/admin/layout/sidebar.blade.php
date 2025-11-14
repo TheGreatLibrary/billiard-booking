@@ -17,9 +17,13 @@
         </a>
 
         <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase">Управление</div>
-        <a href="{{ route('admin.halls.editor') }}" 
+        <a href="{{ route('admin.tables.editor') }}" 
          class="block py-3 px-4 hover:bg-gray-700">
-            Редактор зала
+            Редактор столов
+        </a>
+         <a href="{{ route('admin.zones.editor') }}" 
+         class="block py-3 px-4 hover:bg-gray-700">
+            Редактор зон
         </a>
         <a href="{{ route('admin.users.index') }}" class="block py-3 px-4 hover:bg-gray-700 {{ request()->routeIs('admin.users.*') ? 'bg-gray-700 border-r-4 border-blue-500' : '' }}">
             Пользователи

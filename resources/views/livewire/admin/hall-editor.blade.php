@@ -113,10 +113,15 @@
             <div class="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
                 <div class="mb-4 flex justify-between items-center">
                     <h3 class="font-bold">🗺️ План зала ({{ $gridWidth }}×{{ $gridHeight }})</h3>
-                    <div class="text-sm text-gray-600">
+                    <div class="text-sm">
                         <span class="inline-block px-2 py-1 bg-green-100 rounded">
                             На карте: {{ count(array_filter($resources, fn($r) => $r['on_grid'])) }}
                         </span>
+                        @if($selectedTableId)
+                        <span class="inline-block px-2 py-1 bg-blue-500 text-white rounded ml-2 animate-pulse">
+                            👆 Кликните на сетку чтобы разместить стол
+                        </span>
+                        @endif
                     </div>
                 </div>
 
@@ -124,62 +129,61 @@
                      style="max-height: 70vh;">
                     
                     <div id="grid-canvas" 
-                         class="relative"
+                         class="relative bg-white cursor-crosshair"
                          style="width: {{ $gridWidth * $cellSize }}px; 
-                                height: {{ $gridHeight * $cellSize }}px;"
+                                height: {{ $gridHeight * $cellSize }}px;
+                                background-image: 
+                                    repeating-linear-gradient(0deg, transparent, transparent {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize }}px),
+                                    repeating-linear-gradient(90deg, transparent, transparent {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize }}px);
+                                background-size: {{ $cellSize }}px {{ $cellSize }}px;"
                          data-grid-width="{{ $gridWidth }}"
                          data-grid-height="{{ $gridHeight }}"
                          data-cell-size="{{ $cellSize }}">
                         
-                        {{-- SVG сетка --}}
-                        <svg class="absolute inset-0 pointer-events-none" width="100%" height="100%">
-                            @for($x = 0; $x <= $gridWidth; $x++)
-                                <line x1="{{ $x * $cellSize }}" y1="0" 
-                                      x2="{{ $x * $cellSize }}" y2="{{ $gridHeight * $cellSize }}" 
-                                      stroke="#e5e7eb" stroke-width="1"/>
-                                @if($x % 5 === 0)
-                                    <text x="{{ $x * $cellSize + 2 }}" y="12" 
-                                          font-size="10" fill="#9ca3af">{{ $x }}</text>
-                                @endif
-                            @endfor
-                            @for($y = 0; $y <= $gridHeight; $y++)
-                                <line x1="0" y1="{{ $y * $cellSize }}" 
-                                      x2="{{ $gridWidth * $cellSize }}" y2="{{ $y * $cellSize }}" 
-                                      stroke="#e5e7eb" stroke-width="1"/>
-                                @if($y % 5 === 0)
-                                    <text x="2" y="{{ $y * $cellSize + 12 }}" 
-                                          font-size="10" fill="#9ca3af">{{ $y }}</text>
-                                @endif
-                            @endfor
-                        </svg>
+                        {{-- Координатные метки --}}
+                        @for($x = 0; $x <= $gridWidth; $x += 5)
+                            <div class="absolute text-xs text-gray-400 pointer-events-none select-none" 
+                                 style="left: {{ $x * $cellSize + 2 }}px; top: 2px; z-index: 1;">{{ $x }}</div>
+                        @endfor
+                        @for($y = 0; $y <= $gridHeight; $y += 5)
+                            <div class="absolute text-xs text-gray-400 pointer-events-none select-none" 
+                                 style="left: 2px; top: {{ $y * $cellSize + 2 }}px; z-index: 1;">{{ $y }}</div>
+                        @endfor
 
-                        {{-- Зоны (подложка) --}}
-                        @foreach($zones as $zone)
-                            @if(!empty($zone['coordinates']))
-                            <svg class="absolute inset-0 pointer-events-none" width="100%" height="100%">
-                                <polygon 
-                                    points="{{ collect($zone['coordinates'])->map(fn($p) => ($p['x'] * $cellSize) . ',' . ($p['y'] * $cellSize))->join(' ') }}"
-                                    fill="{{ $zone['color'] }}"
-                                    opacity="0.2"
-                                    stroke="{{ $zone['color'] }}"
-                                    stroke-width="2"
-                                />
-                                <text 
-                                    x="{{ collect($zone['coordinates'])->avg('x') * $cellSize }}" 
-                                    y="{{ collect($zone['coordinates'])->avg('y') * $cellSize }}"
-                                    text-anchor="middle"
-                                    font-size="14"
-                                    fill="{{ $zone['color'] }}"
-                                    font-weight="bold">
-                                    {{ $zone['name'] }}
-                                </text>
-                            </svg>
-                            @endif
-                        @endforeach
+                        {{-- Зоны (подложка) - один SVG для всех зон --}}
+                        @if(count($zones) > 0)
+                        <svg class="absolute inset-0 pointer-events-none select-none" 
+                             style="z-index: 2;"
+                             width="{{ $gridWidth * $cellSize }}" 
+                             height="{{ $gridHeight * $cellSize }}">
+                            @foreach($zones as $zone)
+                                @if(!empty($zone['coordinates']))
+                                <g>
+                                    <polygon 
+                                        points="{{ collect($zone['coordinates'])->map(fn($p) => ($p['x'] * $cellSize) . ',' . ($p['y'] * $cellSize))->join(' ') }}"
+                                        fill="{{ $zone['color'] }}"
+                                        opacity="0.2"
+                                        stroke="{{ $zone['color'] }}"
+                                        stroke-width="2"
+                                    />
+                                    <text 
+                                        x="{{ collect($zone['coordinates'])->avg('x') * $cellSize }}" 
+                                        y="{{ collect($zone['coordinates'])->avg('y') * $cellSize }}"
+                                        text-anchor="middle"
+                                        font-size="14"
+                                        fill="{{ $zone['color'] }}"
+                                        font-weight="bold">
+                                        {{ $zone['name'] }}
+                                    </text>
+                                </g>
+                                @endif
+                            @endforeach
+                        </svg>
+                        @endif
 
                         {{-- Столы на сетке --}}
                         @foreach(array_filter($resources, fn($r) => $r['on_grid']) as $table)
-                            <div class="resource-on-grid absolute cursor-move rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-lg transition-all hover:shadow-xl
+                            <div class="resource-on-grid absolute rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-lg hover:shadow-xl
                                         {{ $table['state'] === 'available' ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600' }}"
                                  data-resource-id="{{ $table['id'] }}"
                                  data-width="{{ $table['grid_width'] }}"
@@ -189,21 +193,25 @@
                                         width: {{ $table['grid_width'] * $cellSize }}px; 
                                         height: {{ $table['grid_height'] * $cellSize }}px;
                                         transform: rotate({{ $table['rotation'] }}deg);
-                                        transform-origin: center;">
-                                <div class="text-center">
+                                        transform-origin: center;
+                                        z-index: 10;
+                                        cursor: move;">
+                                <div class="text-center pointer-events-none select-none">
                                     <div>{{ $table['code'] }}</div>
                                     <div class="text-xs opacity-90">{{ $table['zone_name'] }}</div>
                                 </div>
                                 
-                                {{-- Контекстное меню --}}
-                                <div class="absolute -top-1 -right-1 flex opacity-0 hover:opacity-100 transition-opacity">
+                                {{-- Контекстное меню - ИСПРАВЛЕНО: opacity 0.5 вместо 0 --}}
+                                <div class="absolute -top-1 -right-1 flex opacity-50 hover:opacity-100 transition-opacity pointer-events-auto"
+                                     style="z-index: 20;">
                                     <button wire:click="rotateTable({{ $table['id'] }})"
-                                            onclick="event.stopPropagation();"
+                                            type="button"
                                             class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-l text-xs transition">
                                         🔄
                                     </button>
                                     <button wire:click="removeTableFromGrid({{ $table['id'] }})"
-                                            onclick="event.stopPropagation(); if(!confirm('Убрать стол с карты?')) event.preventDefault();"
+                                            type="button"
+                                            onclick="if(!confirm('Убрать стол с карты?')) return false;"
                                             class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-r text-xs transition">
                                         ✕
                                     </button>
@@ -298,7 +306,7 @@
                     <h3 class="font-bold">🗺️ План зала ({{ $gridWidth }}×{{ $gridHeight }})</h3>
                     @if($drawingZone)
                         <p class="text-sm text-yellow-600 mt-2">
-                            Кликайте по сетке, чтобы добавить точки зоны. Минимум 3 точки.
+                            👆 Кликайте по сетке, чтобы добавить точки зоны. Минимум 3 точки.
                         </p>
                     @endif
                 </div>
@@ -307,51 +315,49 @@
                      style="max-height: 70vh;">
                     
                     <div id="zone-canvas" 
-                         class="relative {{ $drawingZone ? 'cursor-crosshair' : '' }}"
+                         class="relative bg-white {{ $drawingZone ? 'cursor-crosshair' : '' }}"
                          style="width: {{ $gridWidth * $cellSize }}px; 
-                                height: {{ $gridHeight * $cellSize }}px;">
+                                height: {{ $gridHeight * $cellSize }}px;
+                                background-image: 
+                                    repeating-linear-gradient(0deg, transparent, transparent {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize }}px),
+                                    repeating-linear-gradient(90deg, transparent, transparent {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize - 1 }}px, #e5e7eb {{ $cellSize }}px);
+                                background-size: {{ $cellSize }}px {{ $cellSize }}px;">
                         
-                        {{-- SVG сетка --}}
-                        <svg class="absolute inset-0 pointer-events-none" width="100%" height="100%">
-                            @for($x = 0; $x <= $gridWidth; $x++)
-                                <line x1="{{ $x * $cellSize }}" y1="0" 
-                                      x2="{{ $x * $cellSize }}" y2="{{ $gridHeight * $cellSize }}" 
-                                      stroke="#e5e7eb" stroke-width="1"/>
-                            @endfor
-                            @for($y = 0; $y <= $gridHeight; $y++)
-                                <line x1="0" y1="{{ $y * $cellSize }}" 
-                                      x2="{{ $gridWidth * $cellSize }}" y2="{{ $y * $cellSize }}" 
-                                      stroke="#e5e7eb" stroke-width="1"/>
-                            @endfor
-                        </svg>
-
                         {{-- Существующие зоны --}}
-                        @foreach($zones as $zone)
-                            @if(!empty($zone['coordinates']))
-                            <svg class="absolute inset-0 pointer-events-none" width="100%" height="100%">
-                                <polygon 
-                                    points="{{ collect($zone['coordinates'])->map(fn($p) => ($p['x'] * $cellSize) . ',' . ($p['y'] * $cellSize))->join(' ') }}"
-                                    fill="{{ $zone['color'] }}"
-                                    opacity="0.3"
-                                    stroke="{{ $zone['color'] }}"
-                                    stroke-width="3"
-                                />
-                                <text 
-                                    x="{{ collect($zone['coordinates'])->avg('x') * $cellSize }}" 
-                                    y="{{ collect($zone['coordinates'])->avg('y') * $cellSize }}"
-                                    text-anchor="middle"
-                                    font-size="16"
-                                    fill="{{ $zone['color'] }}"
-                                    font-weight="bold">
-                                    {{ $zone['name'] }}
-                                </text>
-                            </svg>
-                            @endif
-                        @endforeach
+                        @if(count($zones) > 0)
+                        <svg class="absolute inset-0 pointer-events-none" 
+                             width="{{ $gridWidth * $cellSize }}" 
+                             height="{{ $gridHeight * $cellSize }}">
+                            @foreach($zones as $zone)
+                                @if(!empty($zone['coordinates']))
+                                <g>
+                                    <polygon 
+                                        points="{{ collect($zone['coordinates'])->map(fn($p) => ($p['x'] * $cellSize) . ',' . ($p['y'] * $cellSize))->join(' ') }}"
+                                        fill="{{ $zone['color'] }}"
+                                        opacity="0.3"
+                                        stroke="{{ $zone['color'] }}"
+                                        stroke-width="3"
+                                    />
+                                    <text 
+                                        x="{{ collect($zone['coordinates'])->avg('x') * $cellSize }}" 
+                                        y="{{ collect($zone['coordinates'])->avg('y') * $cellSize }}"
+                                        text-anchor="middle"
+                                        font-size="16"
+                                        fill="{{ $zone['color'] }}"
+                                        font-weight="bold">
+                                        {{ $zone['name'] }}
+                                    </text>
+                                </g>
+                                @endif
+                            @endforeach
+                        </svg>
+                        @endif
 
                         {{-- Рисуемая зона (в процессе) --}}
                         @if($drawingZone && count($zonePoints) > 0)
-                        <svg class="absolute inset-0 pointer-events-none" width="100%" height="100%">
+                        <svg class="absolute inset-0 pointer-events-none" 
+                             width="{{ $gridWidth * $cellSize }}" 
+                             height="{{ $gridHeight * $cellSize }}">
                             @if(count($zonePoints) > 1)
                                 <polyline 
                                     points="{{ collect($zonePoints)->map(fn($p) => ($p['x'] * $cellSize) . ',' . ($p['y'] * $cellSize))->join(' ') }}"
@@ -415,29 +421,47 @@ function hallEditorData() {
     };
 }
 
-const cellSize = {{ $cellSize }};
-let selectedTableId = @json($selectedTableId);
-let draggedElement = null;
-let isDragging = false;
-let isDrawingZone = @json($drawingZone);
-
-// Обновление выбранного стола из Livewire
-document.addEventListener('livewire:init', () => {
-    Livewire.on('table-selected', (event) => {
-        selectedTableId = event.resourceId;
-    });
-});
-
-// Клик на сетку для размещения выбранного стола
 document.addEventListener('DOMContentLoaded', function() {
+    const cellSize = {{ $cellSize }};
+    let selectedTableId = {{ $selectedTableId ?? 'null' }};
+    let isDrawingZone = {{ $drawingZone ? 'true' : 'false' }};
+    let draggedElement = null;
+    let isDragging = false;
+    let dragStartPos = null;
+    let initialMousePos = null;
+
+    console.log('🎯 Hall Editor JS инициализирован', { cellSize });
+
+    // Обновление состояния при изменениях Livewire
+    Livewire.hook('morph.updated', () => {
+        selectedTableId = {{ $selectedTableId ?? 'null' }};
+        isDrawingZone = {{ $drawingZone ? 'true' : 'false' }};
+        console.log('🔄 State updated:', { selectedTableId, isDrawingZone });
+    });
+
+    // ==================== РЕЖИМ СТОЛОВ ====================
     const canvas = document.getElementById('grid-canvas');
-    const zoneCanvas = document.getElementById('zone-canvas');
     
     if (canvas) {
-        // Клик для размещения стола
+        console.log('✅ Grid canvas найден');
+        
+        // Клик по сетке для размещения выбранного стола
         canvas.addEventListener('click', function(e) {
-            if (!selectedTableId) return;
-            if (isDragging) return;
+            // Игнорируем клики по столам и их кнопкам
+            if (e.target.closest('.resource-on-grid')) {
+                console.log('⏭️ Клик по столу, игнорируем');
+                return;
+            }
+            
+            if (!selectedTableId) {
+                console.log('⚠️ Стол не выбран');
+                return;
+            }
+            
+            if (isDragging) {
+                console.log('⏭️ Идёт драг, игнорируем клик');
+                return;
+            }
             
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -446,35 +470,71 @@ document.addEventListener('DOMContentLoaded', function() {
             const gridX = Math.floor(x / cellSize);
             const gridY = Math.floor(y / cellSize);
             
+            console.log('📍 Размещаем стол:', { selectedTableId, gridX, gridY });
+            
             @this.call('placeTableOnGrid', selectedTableId, gridX, gridY);
             selectedTableId = null;
         });
         
-        // Drag & Drop для столов НА сетке
+        // ==================== DRAG & DROP ====================
+        // Используем делегирование событий через canvas
+        
         canvas.addEventListener('mousedown', function(e) {
+            // Находим элемент стола
             const target = e.target.closest('.resource-on-grid');
-            if (!target) return;
+            if (!target) {
+                console.log('⏭️ Клик не по столу');
+                return;
+            }
+            
+            // Игнорируем клики по кнопкам
+            if (e.target.closest('button')) {
+                console.log('⏭️ Клик по кнопке');
+                return;
+            }
             
             e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('🖱️ Mousedown на столе:', target.dataset.resourceId);
+            
             draggedElement = target;
             isDragging = false;
             
             const rect = target.getBoundingClientRect();
             const canvasRect = canvas.getBoundingClientRect();
             
-            draggedElement.offsetX = e.clientX - rect.left;
-            draggedElement.offsetY = e.clientY - rect.top;
-            draggedElement.style.zIndex = '1000';
-            draggedElement.style.cursor = 'grabbing';
+            // Сохраняем начальную позицию
+            dragStartPos = {
+                x: parseInt(target.style.left) || 0,
+                y: parseInt(target.style.top) || 0
+            };
+            
+            // Сохраняем позицию мыши относительно элемента
+            initialMousePos = {
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top
+            };
+            
+            // Визуальная обратная связь
+            target.style.zIndex = '1000';
+            target.style.opacity = '0.7';
+            target.style.cursor = 'grabbing';
+            
+            console.log('✅ Drag начат', { dragStartPos, initialMousePos });
         });
         
+        // Mousemove на document для плавного драга
         document.addEventListener('mousemove', function(e) {
             if (!draggedElement) return;
+            
             isDragging = true;
             
             const canvasRect = canvas.getBoundingClientRect();
-            let x = e.clientX - canvasRect.left - draggedElement.offsetX;
-            let y = e.clientY - canvasRect.top - draggedElement.offsetY;
+            
+            // Вычисляем новую позицию
+            let x = e.clientX - canvasRect.left - initialMousePos.offsetX;
+            let y = e.clientY - canvasRect.top - initialMousePos.offsetY;
             
             // Snap to grid
             let gridX = Math.round(x / cellSize);
@@ -485,39 +545,84 @@ document.addEventListener('DOMContentLoaded', function() {
             const gridWidth = parseInt(canvas.dataset.gridWidth);
             const gridHeight = parseInt(canvas.dataset.gridHeight);
             
-            // Границы
-            if (gridX < 0) gridX = 0;
-            if (gridY < 0) gridY = 0;
-            if (gridX + width > gridWidth) gridX = gridWidth - width;
-            if (gridY + height > gridHeight) gridY = gridHeight - height;
+            // Ограничения границ
+            gridX = Math.max(0, Math.min(gridX, gridWidth - width));
+            gridY = Math.max(0, Math.min(gridY, gridHeight - height));
             
+            // Применяем позицию
             draggedElement.style.left = (gridX * cellSize) + 'px';
             draggedElement.style.top = (gridY * cellSize) + 'px';
         });
         
+        // Mouseup на document
         document.addEventListener('mouseup', function(e) {
             if (!draggedElement) return;
+            
+            console.log('🖱️ Mouseup, isDragging:', isDragging);
+            
+            // Восстанавливаем стили
+            draggedElement.style.zIndex = '10';
+            draggedElement.style.opacity = '1';
+            draggedElement.style.cursor = 'move';
             
             if (isDragging) {
                 const gridX = Math.round(parseInt(draggedElement.style.left) / cellSize);
                 const gridY = Math.round(parseInt(draggedElement.style.top) / cellSize);
                 const resourceId = draggedElement.dataset.resourceId;
                 
+                console.log('💾 Сохраняем новую позицию:', { resourceId, gridX, gridY });
+                
+                // Сохраняем в базу
                 @this.call('updateTablePosition', resourceId, gridX, gridY);
+            } else {
+                // Если не было движения, возвращаем на место
+                console.log('⏮️ Возвращаем на место (не было движения)');
+                draggedElement.style.left = dragStartPos.x + 'px';
+                draggedElement.style.top = dragStartPos.y + 'px';
             }
             
-            draggedElement.style.zIndex = '';
-            draggedElement.style.cursor = 'move';
             draggedElement = null;
+            dragStartPos = null;
+            initialMousePos = null;
             
-            setTimeout(() => { isDragging = false; }, 100);
+            // Сброс флага с задержкой
+            setTimeout(() => { 
+                isDragging = false; 
+                console.log('✅ Drag завершен');
+            }, 100);
+        });
+        
+        // Отмена драга при уходе мыши за пределы документа
+        document.addEventListener('mouseleave', function(e) {
+            if (draggedElement && e.target === document.body) {
+                console.log('⚠️ Мышь покинула документ, отменяем драг');
+                
+                // Возвращаем на место
+                draggedElement.style.left = dragStartPos.x + 'px';
+                draggedElement.style.top = dragStartPos.y + 'px';
+                draggedElement.style.zIndex = '10';
+                draggedElement.style.opacity = '1';
+                draggedElement.style.cursor = 'move';
+                
+                draggedElement = null;
+                dragStartPos = null;
+                initialMousePos = null;
+                isDragging = false;
+            }
         });
     }
+
+    // ==================== РЕЖИМ ЗОН ====================
+    const zoneCanvas = document.getElementById('zone-canvas');
     
-    // Клик для рисования зон
     if (zoneCanvas) {
+        console.log('✅ Zone canvas найден');
+        
         zoneCanvas.addEventListener('click', function(e) {
-            if (!isDrawingZone) return;
+            if (!isDrawingZone) {
+                console.log('⚠️ Режим рисования зон не активен');
+                return;
+            }
             
             const rect = zoneCanvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -526,14 +631,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const gridX = Math.round(x / cellSize);
             const gridY = Math.round(y / cellSize);
             
+            console.log('📍 Добавляем точку зоны:', { gridX, gridY });
+            
             @this.call('addZonePoint', gridX, gridY);
         });
     }
-});
-
-// Обновление состояния рисования зоны
-Livewire.hook('morph.updated', () => {
-    isDrawingZone = @json($drawingZone);
+    
+    console.log('🎉 Все обработчики событий установлены');
 });
 </script>
 @endpush

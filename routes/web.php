@@ -90,6 +90,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/places/{place}/edit', \App\Livewire\Admin\PlaceEdit::class)->name('places.edit');
 
     Route::get('/halls-editor', HallEditor::class)->name('halls.editor');
+    Route::get('/zones-editor', \App\Livewire\Admin\ZoneEditor::class)->name('zones.editor');
+    Route::get('/tables-editor', \App\Livewire\Admin\TableEditor::class)->name('tables.editor');
+
 
     /**
      * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!

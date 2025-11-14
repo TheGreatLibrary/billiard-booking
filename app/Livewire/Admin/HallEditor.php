@@ -32,8 +32,6 @@ class HallEditor extends Component
     public $drawingZone = false;
     public $zonePoints = [];
     public $editingZoneId = null;
-    
-    protected $listeners = ['tableSelected' => 'handleTableSelected'];
 
     public function mount()
     {
@@ -67,7 +65,9 @@ class HallEditor extends Component
     {
         if (!$this->place) return;
         
-        $this->resources = Resource::where('place_id', $this->place->id)
+        $this->resources = Resource::whereHas('zone', function($q) {
+                $q->where('place_id', $this->place->id);
+            })
             ->with(['model', 'zone', 'state'])
             ->get()
             ->map(fn($r) => [
@@ -82,7 +82,7 @@ class HallEditor extends Component
                 'grid_width' => $r->grid_width ?? 2,
                 'grid_height' => $r->grid_height ?? 1,
                 'rotation' => $r->rotation ?? 0,
-                'on_grid' => !is_null($r->grid_x),
+                'on_grid' => !is_null($r->grid_x) && !is_null($r->grid_y),
             ])
             ->toArray();
     }
@@ -98,18 +98,13 @@ class HallEditor extends Component
                 'name' => $z->name,
                 'color' => $z->color ?? '#3B82F6',
                 'price_coef' => $z->price_coef,
-                'coordinates' => $z->coordinates ?? [],
+                'coordinates' => is_string($z->coordinates) ? json_decode($z->coordinates, true) : ($z->coordinates ?? []),
             ])
             ->toArray();
     }
 
-    public function handleTableSelected($resourceId)
-    {
-        $this->selectedTableId = $resourceId;
-    }
-
     /**
-     * Разместить стол на сетке (клик по столу в контейнере, затем по сетке)
+     * Выбрать стол из контейнера
      */
     public function selectTableFromContainer($resourceId)
     {
@@ -151,7 +146,7 @@ class HallEditor extends Component
         
         $this->loadResources();
         $this->selectedTableId = null;
-        session()->flash('success', 'Стол размещен');
+        session()->flash('success', 'Стол размещен на позиции (' . $gridX . ', ' . $gridY . ')');
     }
 
     /**
@@ -188,7 +183,7 @@ class HallEditor extends Component
         ]);
         
         $this->loadResources();
-        session()->flash('success', 'Позиция обновлена');
+        session()->flash('success', 'Позиция обновлена: (' . $gridX . ', ' . $gridY . ')');
     }
 
     /**
@@ -300,14 +295,14 @@ class HallEditor extends Component
             'name' => $zoneName,
             'color' => $color,
             'price_coef' => $priceCoef,
-            'coordinates' => $this->zonePoints,
+            'coordinates' => json_encode($this->zonePoints),
         ]);
 
         $this->drawingZone = false;
         $this->zonePoints = [];
         $this->loadZones();
         
-        session()->flash('success', 'Зона создана');
+        session()->flash('success', 'Зона "' . $zoneName . '" создана');
     }
 
     /**
