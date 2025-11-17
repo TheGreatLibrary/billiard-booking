@@ -110,15 +110,6 @@
                             </label>
 
                             <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition
-                                {{ $paymentMethod === 'cash' ? 'border-blue-500 bg-blue-50' : 'border-gray-200' }}">
-                                <input type="radio" wire:model.live="paymentMethod" value="cash" class="mr-3">
-                                <div class="flex-1">
-                                    <div class="font-medium">💵 Наличные</div>
-                                    <div class="text-xs text-gray-500">Оплата на месте</div>
-                                </div>
-                            </label>
-
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition
                                 {{ $paymentMethod === 'online' ? 'border-blue-500 bg-blue-50' : 'border-gray-200' }}">
                                 <input type="radio" wire:model.live="paymentMethod" value="online" class="mr-3">
                                 <div class="flex-1">

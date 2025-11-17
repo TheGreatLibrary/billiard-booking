@@ -1,8 +1,9 @@
 <?php
 
 namespace App\Livewire\Admin;
+
 use Livewire\Component;
-use App\Models\{Booking, Order, User, ProductType, ProductModel, Place, Zone, PriceRule, Resource};
+use App\Models\{Booking, User, ProductType, ProductModel, Place, Zone, PriceRule, Resource};
 use Illuminate\Support\Facades\DB;
 
 class AdminDashboard extends Component
@@ -10,6 +11,7 @@ class AdminDashboard extends Component
     public $total = [];
     public $monthly = [];
     public $statusStats = [];
+    public $paymentStatusStats = [];
 
     public function mount()
     {
@@ -20,10 +22,10 @@ class AdminDashboard extends Component
     {
         // Основные показатели
         $this->total = [
-            'orders'        => Booking::count(),
-            'orders_paid'   => Booking::where('status', 'paid')->count(),
-            'orders_pending'=> Booking::where('status', 'pending')->count(),
-            'amount'        => Booking::where('status', 'paid')->sum('total_amount'),
+            'bookings'      => Booking::count(),
+            'bookings_paid' => Booking::where('payment_status', 'paid')->count(),
+            'bookings_pending' => Booking::where('payment_status', 'pending')->count(),
+            'amount'        => Booking::where('payment_status', 'paid')->sum('total_amount') / 100, // конвертируем в рубли
             'users'         => User::count(),
             'productTypes'  => ProductType::count(),
             'productModels' => ProductModel::count(),
@@ -33,20 +35,27 @@ class AdminDashboard extends Component
             'resources'     => Resource::count(),
         ];
 
-        // Статистика по статусам заказов
+        // Статистика по статусам бронирований
         $this->statusStats = Booking::select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
             ->get()
             ->keyBy('status')
             ->map(fn($item) => $item->count);
 
-        // Разбивка по месяцам (SQLite) - оплаченные заказы
+        // Статистика по статусам оплаты
+        $this->paymentStatusStats = Booking::select('payment_status', DB::raw('COUNT(*) as count'))
+            ->groupBy('payment_status')
+            ->get()
+            ->keyBy('payment_status')
+            ->map(fn($item) => $item->count);
+
+        // Разбивка по месяцам (SQLite) - оплаченные бронирования
         $this->monthly = Booking::select(
                 DB::raw("strftime('%Y-%m', paid_at) as month"),
                 DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(total_amount) as amount')
+                DB::raw('SUM(total_amount) / 100.0 as amount')
             )
-            ->where('status', 'paid')
+            ->where('payment_status', 'paid')
             ->whereNotNull('paid_at')
             ->groupBy('month')
             ->orderBy('month', 'desc')

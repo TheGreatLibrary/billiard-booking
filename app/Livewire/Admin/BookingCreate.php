@@ -48,6 +48,47 @@ class BookingCreate extends Component
         $this->step = 2;
     }
 
+    /**
+ * Быстрый выбор нескольких часов подряд
+ */
+public function quickSelect($hours)
+{
+    $this->selectedSlots = [];
+    
+    $availableTimes = array_keys(array_filter($this->availableSlots, fn($slot) => $slot['available']));
+    
+    // Берем первые N доступных слотов
+    $slotsToSelect = array_slice($availableTimes, 0, $hours);
+    
+    foreach ($slotsToSelect as $time) {
+        $this->selectedSlots[] = $time;
+    }
+    
+    $this->calculateTotal();
+}
+
+/**
+ * Очистить выбранные слоты
+ */
+public function clearSlots()
+{
+    $this->selectedSlots = [];
+    $this->calculateTotal();
+}
+
+/**
+ * Переход к выбору времени (для кнопки на шаге 2)
+ */
+public function proceedToTimeSelection()
+{
+    if (!$this->resource_id) {
+        session()->flash('error', 'Выберите стол');
+        return;
+    }
+    
+    $this->step = 3;
+}
+
     private function loadPlaceData()
     {
         $service = app(BookingService::class);
