@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+     @vite(['resources/css/app.css', 'resources/js/app.js'])
+   <!-- <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script> -->
 </head>
 <body class="bg-gray-100">
     <!-- Навигация -->
@@ -100,64 +100,7 @@
             </div>
         </div>
 
-        <!-- Мои бронирования -->
-        <div id="my-bookings" class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-bold mb-6">Мои бронирования</h2>
-
-            @php
-                $userBookings = \App\Models\Booking::where('user_id', auth()->id())
-                    ->with(['place', 'bookingResources.resource', 'order'])
-                    ->orderBy('starts_at', 'desc')
-                    ->limit(5)
-                    ->get();
-            @endphp
-
-            @if($userBookings->count() > 0)
-                <div class="space-y-4">
-                    @foreach($userBookings as $booking)
-                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-semibold text-lg">{{ $booking->place->name }}</h3>
-                                <p class="text-gray-600">
-                                    {{ \Carbon\Carbon::parse($booking->starts_at)->format('d.m.Y H:i') }} - 
-                                    {{ \Carbon\Carbon::parse($booking->ends_at)->format('H:i') }}
-                                </p>
-                                <div class="mt-2">
-                                    @foreach($booking->bookingResources as $br)
-                                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                                            {{ $br->resource->code ?? 'Стол' }}
-                                        </span>
-                                    @endforeach
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="inline-block px-3 py-1 text-sm font-semibold rounded
-                                    @if($booking->status === 'confirmed') bg-green-100 text-green-800
-                                    @elseif($booking->status === 'pending') bg-yellow-100 text-yellow-800
-                                    @elseif($booking->status === 'canceled') bg-red-100 text-red-800
-                                    @else bg-gray-100 text-gray-800
-                                    @endif">
-                                    {{ $booking->status }}
-                                </span>
-                                @if($booking->order)
-                                    <p class="text-lg font-bold text-green-600 mt-2">
-                                        {{ number_format($booking->order->total_amount, 0, ',', ' ') }} ₽
-                                    </p>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="text-center py-12 text-gray-500">
-                    <div class="text-6xl mb-4">📭</div>
-                    <p class="text-xl">У вас пока нет бронирований</p>
-                    <p class="mt-2">Создайте первое бронирование, чтобы начать играть!</p>
-                </div>
-            @endif
-        </div>
+        
     </main>
 </body>
 </html>

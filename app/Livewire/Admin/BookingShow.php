@@ -14,10 +14,10 @@ class BookingShow extends Component
         $this->booking = $booking->load([
             'user',
             'place',
-            'bookingResources.resource.model',
-            'bookingResources.resource.zone',
-            'order.items.bookingResource',
-            'order.items.productModel',
+            'resource.model',
+            'resource.zone',
+            'slots',         
+            'equipment',     
         ]);
     }
 

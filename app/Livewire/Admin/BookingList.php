@@ -12,30 +12,39 @@ class BookingList extends Component
 
     public $search = '';
     public $statusFilter = '';
+    public $paymentStatusFilter = '';
 
     public function render()
     {
-        $bookings = Booking::with(['user', 'place'])
+        $bookings = Booking::with(['user', 'place', 'resource'])
             ->when($this->search, fn($q) => 
-                $q->whereHas('user', fn($qq) => 
-                    $qq->where('name', 'like', "%{$this->search}%")
-                )
+                $q->where(function($query) {
+                    $query->whereHas('user', fn($qq) => 
+                        $qq->where('name', 'like', "%{$this->search}%")
+                    )
+                    ->orWhere('guest_name', 'like', "%{$this->search}%")
+                    ->orWhere('guest_email', 'like', "%{$this->search}%");
+                })
             )
             ->when($this->statusFilter, fn($q) => 
                 $q->where('status', $this->statusFilter)
             )
-            ->latest()
+            ->when($this->paymentStatusFilter, fn($q) => 
+                $q->where('payment_status', $this->paymentStatusFilter)
+            )
+            ->latest('created_at')
             ->paginate(15);
 
-        return view('livewire.admin.booking-list', compact('bookings'))->layout('admin.layout.app-livewire');
+        return view('livewire.admin.booking-list', compact('bookings'))
+            ->layout('admin.layout.app-livewire');
     }
 
     public function deleteBooking($bookingId)
     {
         $booking = Booking::findOrFail($bookingId);
         
-        if (in_array($booking->status, ['confirmed', 'finished'])) {
-            session()->flash('error', 'Нельзя удалить подтверждённое бронирование');
+        if ($booking->isPaid()) {
+            session()->flash('error', 'Нельзя удалить оплаченное бронирование');
             return;
         }
 
