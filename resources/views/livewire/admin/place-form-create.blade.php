@@ -22,7 +22,7 @@
             </div>
 
             <button type="submit" class="btn btn-success">Сохранить</button>
-            <a href="{{ route('admin.places.list') }}" class="btn btn-secondary">Отмена</a>
+            <a href="{{ route('admin.places.index') }}" class="btn btn-secondary">Отмена</a>
         </form>
     </div>
 </div>

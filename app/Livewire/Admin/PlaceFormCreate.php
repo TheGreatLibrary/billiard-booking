@@ -31,7 +31,7 @@ class PlaceFormCreate extends Component
 
         session()->flash('success', 'Локация успешно создана.');
         
-        return redirect()->route('admin.places.list');
+        return redirect()->route('admin.places.index');
     }
 
     public function render()

@@ -160,7 +160,7 @@
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 class="text-xl font-semibold mb-4 text-gray-800">🗂️ Справочники</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{{ route('admin.places.list') }}" 
+            <a href="{{ route('admin.places.index') }}" 
                class="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition">
                 <div class="text-2xl font-bold text-blue-600">{{ $total['places'] }}</div>
                 <div class="text-sm text-gray-700 mt-1 font-medium">🏢 Места</div>

@@ -32,7 +32,7 @@
         </div>
         <div class="mt-4">
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Обновить</button>
-            <a href="{{ route('admin.places.list') }}" class="px-4 py-2 bg-gray-400 text-white rounded inline-block ml-2">Отмена</a>
+            <a href="{{ route('admin.places.index') }}" class="px-4 py-2 bg-gray-400 text-white rounded inline-block ml-2">Отмена</a>
         </div>
     </form>
 </div>

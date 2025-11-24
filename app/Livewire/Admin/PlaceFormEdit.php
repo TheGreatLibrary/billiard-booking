@@ -42,7 +42,7 @@ class PlaceFormEdit extends Component
 
         session()->flash('success', 'Локация обновлена.');
         
-        return redirect()->route('admin.places.list');
+        return redirect()->route('admin.places.index');
     }
 
     public function render()
