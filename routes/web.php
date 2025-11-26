@@ -15,22 +15,29 @@ use App\Http\Controllers\Admin\PlaceController;
 use App\Http\Controllers\Admin\ZoneController;
 
 use \App\Livewire\Admin\{AdminDashboard, 
-    BookingList, BookingCreate, BookingEditForm, BookingShow, BookingPay, 
+    BookingList, BookingCreate as AdminBookingCreate, BookingEditForm, BookingShow, BookingPay, 
     ResourceList, ResourceForm, 
     UserList, UserForm, UserShow,
     ZoneList, ZoneForm, ZoneEditor,
     ProductTypeList, ProductTypeForm, TableEditor,
     PlaceIndex, PlaceCreate, PlaceEdit
 };
-use \App\Livewire\UserDashboard;
+use App\Livewire\UserDashboard;
+use App\Livewire\BookingCreate;
+use App\Livewire\Profile;
 
 // Главная страница
 Route::view('/', 'welcome')->name('home');
 
 // Пользовательские страницы
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-    Route::view('profile', 'profile')->name('profile');
+Route::get('dashboard', UserDashboard::class)->name('dashboard');
+        Route::get('/profile', Profile::class)
+    ->name('profile');
+    Route::get('/booking', BookingCreate::class)
+    ->name('booking.create');
+
+    
 
     // Обновление профиля
     Route::patch('profile', function (Request $request) {
@@ -73,7 +80,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/dashboard', AdminDashboard::class)->name('dashboard');
 
     Route::get('/bookings', BookingList::class)->name('bookings.index');
-    Route::get('/bookings/create', BookingCreate::class)->name('bookings.create');
+    Route::get('/bookings/create', AdminBookingCreate::class)->name('bookings.create');
     Route::get('/bookings/{booking}/edit', BookingEditForm::class)->name('bookings.edit');
     Route::get('/bookings/{booking}', BookingShow::class)->name('bookings.show'); 
     Route::get('/bookings/{booking}/pay', BookingPay::class) ->name('bookings.pay');
