@@ -6,7 +6,7 @@ use App\Models\Place;
 use App\Services\PlaceService;
 use Livewire\Component;
 
-class PlaceEdit extends Component
+class PlaceFormEdit extends Component
 {
     public Place $place;
     
@@ -48,6 +48,6 @@ class PlaceEdit extends Component
     public function render()
     {
     
-        return view('livewire.admin.place-edit')->layout('admin.layout.app-livewire');
+        return view('livewire.admin.place-form-edit')->layout('admin.layout.app-livewire');
     }
 }

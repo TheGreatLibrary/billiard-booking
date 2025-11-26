@@ -5,7 +5,7 @@ namespace App\Livewire\Admin;
 use App\Services\PlaceService;
 use Livewire\Component;
 
-class PlaceCreate extends Component
+class PlaceFormCreate extends Component
 {
     public $name = '';
     public $address = '';
@@ -36,6 +36,6 @@ class PlaceCreate extends Component
 
     public function render()
     {
-        return view('livewire.admin.place-create')->layout('admin.layout.app-livewire');
+        return view('livewire.admin.place-form-create')->layout('admin.layout.app-livewire');
     }
 }

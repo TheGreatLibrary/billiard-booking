@@ -4,15 +4,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\BookingController as AdminBookingController;
-use App\Http\Controllers\Admin\OrderController;
-use App\Http\Controllers\Admin\PaymentController;
-use App\Http\Controllers\Admin\PriceRuleController;
-use App\Http\Controllers\Admin\ProductTypeController;
-use App\Http\Controllers\Admin\ProductModelController;
-use App\Http\Controllers\Admin\PlaceController;
-use App\Http\Controllers\Admin\ZoneController;
 
 use \App\Livewire\Admin\{AdminDashboard, 
     BookingList, BookingCreate as AdminBookingCreate, BookingEditForm, BookingShow, BookingPay, 
@@ -20,7 +11,9 @@ use \App\Livewire\Admin\{AdminDashboard,
     UserList, UserForm, UserShow,
     ZoneList, ZoneForm, ZoneEditor,
     ProductTypeList, ProductTypeForm, TableEditor,
-    PlaceIndex, PlaceCreate, PlaceEdit
+    PlaceIndex, PlaceFormCreate, PlaceFormEdit,
+    ProductModelForm, ProductModelList,
+    PriceRuleForm, PriceRuleList,
 };
 use App\Livewire\UserDashboard;
 use App\Livewire\BookingCreate;
@@ -74,11 +67,16 @@ Route::get('dashboard', UserDashboard::class)->name('dashboard');
 // ============================================
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     
-    /**
-     * !!!!!!!!!!!!!! НОВЫЕ МАРШРУТЫ ДЛЯ LIVEWIRE !!!!!!!!!!
-     */
     Route::get('/dashboard', AdminDashboard::class)->name('dashboard');
+   
+    Route::get('/price-rules', PriceRuleList::class)->name('price-rules.index');
+    Route::get('/price-rules/create', PriceRuleForm::class)->name('price-rules.create');
+    Route::get('/price-rules/{rule}/edit', PriceRuleForm::class)->name('price-rules.edit');
 
+    Route::get('/product-models', ProductModelList::class)->name('product-models.index');
+    Route::get('/product-models/create', ProductModelForm::class)->name('product-models.create');
+    Route::get('/product-models/{model}/edit', ProductModelForm::class)->name('product-models.edit');
+    
     Route::get('/bookings', BookingList::class)->name('bookings.index');
     Route::get('/bookings/create', AdminBookingCreate::class)->name('bookings.create');
     Route::get('/bookings/{booking}/edit', BookingEditForm::class)->name('bookings.edit');
@@ -105,16 +103,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tables-editor', TableEditor::class)->name('tables.editor');
 
     Route::get('/places', PlaceIndex::class)->name('places.index');
-    Route::get('/places/create', PlaceCreate::class)->name('places.create');
-    Route::get('/places/{place}/edit', PlaceEdit::class)->name('places.edit');
-
-    /**
-     * !!!!!!!!!!!!!!! КОНЕЦ НОВЫХ МАРШРУТОВ !!!!!!!!!!!!
-     */
-
-    Route::resource('product-models', ProductModelController::class);
-    Route::resource('price-rules', PriceRuleController::class);
-
+    Route::get('/places/create', PlaceFormCreate::class)->name('places.form.create');
+    Route::get('/places/{place}/edit', PlaceFormEdit::class)->name('places.form.edit');
 });
 
 require __DIR__.'/auth.php';
