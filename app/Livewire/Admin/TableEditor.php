@@ -164,19 +164,20 @@ class TableEditor extends Component
             return;
         }
         
-        // Определяем зону
+        // ✅ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Определяем зону ОБЯЗАТЕЛЬНО
         $zoneId = $this->detectZone($gridX, $gridY, $table['grid_width'], $table['grid_height']);
         
-        // Если зона не найдена, используем первую доступную зону или оставляем текущую
-        if (!$zoneId && !empty($this->zones)) {
-            $zoneId = $this->zones[0]['id'];
+        // ✅ Если зона не найдена - ЗАПРЕЩАЕМ размещение!
+        if (!$zoneId) {
+            session()->flash('error', 'Невозможно разместить стол вне зоны. Сначала создайте зону в этой области.');
+            return;
         }
         
         // Сохраняем в БД
         Resource::where('id', $this->selectedTableId)->update([
             'grid_x' => $gridX,
             'grid_y' => $gridY,
-            'zone_id' => $zoneId,
+            'zone_id' => $zoneId, // Всегда с зоной
         ]);
         
         $this->loadTables();
@@ -212,23 +213,30 @@ class TableEditor extends Component
             return;
         }
         
-        // Определяем зону
+        // ✅ Определяем зону ОБЯЗАТЕЛЬНО
         $zoneId = $this->detectZone($gridX, $gridY, $table['grid_width'], $table['grid_height'], $table['rotation']);
         
-        // Если зона не найдена, используем первую доступную зону или оставляем текущую
-        if (!$zoneId && !empty($this->zones)) {
-            $zoneId = $this->zones[0]['id'];
+        // ✅ Если зона не найдена - ЗАПРЕЩАЕМ перемещение!
+        if (!$zoneId) {
+            session()->flash('error', 'Невозможно переместить стол вне зоны');
+            $this->loadTables();
+            return;
         }
         
-        // Обновляем
+        // Обновляем с новой зоной
         Resource::where('id', $tableId)->update([
             'grid_x' => $gridX,
             'grid_y' => $gridY,
-            'zone_id' => $zoneId,
+            'zone_id' => $zoneId, // ✅ Всегда обновляем зону!
         ]);
         
         $this->loadTables();
-        session()->flash('success', "Позиция обновлена: ({$gridX}, {$gridY})");
+        
+        // Получаем название новой зоны для сообщения
+        $newZone = collect($this->zones)->firstWhere('id', $zoneId);
+        $zoneName = $newZone ? $newZone['name'] : 'неизвестная';
+        
+        session()->flash('success', "Стол перемещен в зону \"{$zoneName}\" на позицию ({$gridX}, {$gridY})");
     }
 
     /**
@@ -262,10 +270,19 @@ class TableEditor extends Component
             return;
         }
         
+        // ✅ Проверяем, что после поворота стол все еще в зоне
+        $zoneId = $this->detectZone($table['grid_x'], $table['grid_y'], $newWidth, $newHeight, $newRotation);
+        
+        if (!$zoneId) {
+            session()->flash('error', 'После поворота стол выходит за пределы зоны');
+            return;
+        }
+        
         $resource->update([
             'rotation' => $newRotation,
             'grid_width' => $newWidth,
             'grid_height' => $newHeight,
+            'zone_id' => $zoneId, // ✅ Обновляем зону на всякий случай
         ]);
         
         $this->loadTables();
@@ -277,15 +294,17 @@ class TableEditor extends Component
      */
     public function removeTable($tableId)
     {
+        // ✅ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Обнуляем ВСЕ связи!
         Resource::where('id', $tableId)->update([
             'grid_x' => null,
             'grid_y' => null,
-            // Оставляем zone_id как есть, не обнуляем
+            'zone_id' => null,  // ✅ Обнуляем зону!
+            // place_id НЕ трогаем - стол все еще принадлежит заведению
         ]);
         
         $this->loadTables();
         $this->selectedGridTableId = null;
-        session()->flash('success', 'Стол убран с карты');
+        session()->flash('success', 'Стол убран с карты и отвязан от зоны');
     }
 
     /**
@@ -346,7 +365,8 @@ class TableEditor extends Component
     }
 
     /**
-     * Определить зону по координатам стола
+     * ✅ УЛУЧШЕННЫЙ метод определения зоны
+     * Теперь проверяет ВСЕ ячейки стола, а не только центр
      */
     private function detectZone($x, $y, $width, $height, $rotation = 0)
     {
@@ -359,30 +379,49 @@ class TableEditor extends Component
             [$width, $height] = [$height, $width];
         }
         
-        // Проверяем центральную ячейку стола
-        $centerX = $x + floor($width / 2);
-        $centerY = $y + floor($height / 2);
-        
-        // Ищем зону, которой принадлежит центральная ячейка
-        foreach ($this->zones as $zone) {
-            if (empty($zone['coordinates'])) continue;
-            
-            foreach ($zone['coordinates'] as $coord) {
-                if ($coord['x'] == $centerX && $coord['y'] == $centerY) {
-                    return $zone['id'];
-                }
+        // Собираем все ячейки, которые занимает стол
+        $tableCells = [];
+        for ($cellY = $y; $cellY < $y + $height; $cellY++) {
+            for ($cellX = $x; $cellX < $x + $width; $cellX++) {
+                $tableCells[] = ['x' => $cellX, 'y' => $cellY];
             }
         }
         
-        // Если центр не в зоне, проверяем первую ячейку
+        // Подсчитываем сколько ячеек стола попадает в каждую зону
+        $zoneMatches = [];
+        
         foreach ($this->zones as $zone) {
             if (empty($zone['coordinates'])) continue;
             
-            foreach ($zone['coordinates'] as $coord) {
-                if ($coord['x'] == $x && $coord['y'] == $y) {
-                    return $zone['id'];
+            $matchCount = 0;
+            foreach ($tableCells as $cell) {
+                // Проверяем есть ли эта ячейка в координатах зоны
+                foreach ($zone['coordinates'] as $coord) {
+                    if ($coord['x'] == $cell['x'] && $coord['y'] == $cell['y']) {
+                        $matchCount++;
+                        break;
+                    }
                 }
             }
+            
+            if ($matchCount > 0) {
+                $zoneMatches[$zone['id']] = $matchCount;
+            }
+        }
+        
+        // ✅ ВАЖНО: Если хотя бы одна ячейка стола вне всех зон - возвращаем null
+        $totalCells = count($tableCells);
+        $totalMatched = array_sum($zoneMatches);
+        
+        if ($totalMatched < $totalCells) {
+            // Не все ячейки стола в зонах
+            return null;
+        }
+        
+        // Если все ячейки в зонах, возвращаем зону с наибольшим покрытием
+        if (!empty($zoneMatches)) {
+            arsort($zoneMatches);
+            return array_key_first($zoneMatches);
         }
         
         return null;
