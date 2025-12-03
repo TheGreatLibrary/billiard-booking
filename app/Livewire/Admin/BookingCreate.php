@@ -280,7 +280,7 @@ public function proceedToTimeSelection()
 
      public function skipPayment()
     {
-        session()->flash('info', 'Бронирование создано. Оплатите в течение 30 минут.');
+        session()->flash('info', 'Бронирование создано. Оплатите в течение 2 минут.');
         $this->step = 7; // Тоже переходим на финальный шаг
     }
 

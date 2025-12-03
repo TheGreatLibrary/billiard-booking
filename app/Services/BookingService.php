@@ -136,7 +136,7 @@ class BookingService
             'payment_status' => 'pending',
             'total_amount' => $totalAmount,
             'comment' => $data['comment'] ?? null,
-            'expires_at' => now()->addMinutes(30), // TTL 30 минут
+            'expires_at' => now()->addMinutes(2), // TTL 30 минут
              'created_at' => now(),
             ...$guestData,
         ]);
