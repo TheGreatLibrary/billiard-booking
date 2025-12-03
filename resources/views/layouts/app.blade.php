@@ -190,10 +190,8 @@
                         this.isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
                     }
                     
-                    // Применяем тему сразу
                     document.documentElement.classList.toggle("dark", this.isDark);
                     
-                    // Убираем cloaking после инициализации
                     setTimeout(() => {
                         document.body.classList.remove('theme-loading');
                         document.body.classList.add('theme-loaded');
