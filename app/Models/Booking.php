@@ -96,6 +96,15 @@ class Booking extends Model
 }
 
 
+
+
+
+
+
+
+
+
+
 class BookingSlot extends Model
 {
     public $timestamps = false;
