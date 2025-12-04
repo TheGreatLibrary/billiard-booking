@@ -1048,7 +1048,7 @@
         background: #2563EB;
     }
 
-    /* Темная тема для скроллбара */
+
     .dark .overflow-x-auto::-webkit-scrollbar-track {
         background: #374151;
         border-radius: 10px;
@@ -1063,12 +1063,12 @@
         background: #1E40AF;
     }
 
-    /* Плавные переходы для всей темы */
+
     * {
         transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
 
-    /* Анимация загрузки */
+
     @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
