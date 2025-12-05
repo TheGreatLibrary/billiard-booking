@@ -18,10 +18,11 @@ class BookingPay extends Component
             return redirect()->route('admin.bookings.show', $booking);
         }
 
+        // ✅ ИСПРАВЛЕНО: resource.model → resource.productModel
         $this->booking = $booking->load([
             'user', 
             'place', 
-            'resource.model',
+            'resource.productModel', // ✅ Исправлено
             'slots',
             'equipment.productModel'
         ]);
@@ -30,7 +31,7 @@ class BookingPay extends Component
     public function pay(BookingService $service)
     {
         $this->validate([
-            'paymentMethod' => 'required|in:cash,card,online'
+            'paymentMethod' => 'required|in:card,online' // ✅ Убрал 'cash' из валидации (его не было в форме)
         ]);
 
         try {

@@ -3,10 +3,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-use App\Http\Controllers\Admin\DashboardController;
 
 use \App\Livewire\Admin\{AdminDashboard, 
-    BookingList, BookingCreate as AdminBookingCreate, BookingEditForm, BookingShow, BookingPay, 
+    BookingList, BookingCreate as AdminBookingCreate, BookingShow, BookingPay, 
     ResourceList, ResourceForm, 
     UserList, UserForm, UserShow,
     ZoneList, ZoneForm, ZoneEditor,
@@ -29,7 +28,6 @@ use App\Livewire\Auth\ConfirmPassword;
 
 // Главная страница
 Route::view('/', 'welcome')->name('home');
-
 // ==================== АУТЕНТИФИКАЦИЯ (Гости) ====================
 Route::middleware('guest')->group(function () {
     Route::get('/register', RegisterForm::class)->name('register');
@@ -85,7 +83,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     Route::get('/bookings', BookingList::class)->name('bookings.index');
     Route::get('/bookings/create', AdminBookingCreate::class)->name('bookings.create');
-    Route::get('/bookings/{booking}/edit', BookingEditForm::class)->name('bookings.edit');
     Route::get('/bookings/{booking}', BookingShow::class)->name('bookings.show'); 
     Route::get('/bookings/{booking}/pay', BookingPay::class) ->name('bookings.pay');
 

@@ -7,17 +7,18 @@ use App\Models\Booking;
 
 class BookingShow extends Component
 {
-   public Booking $booking;
+    public Booking $booking;
 
     public function mount(Booking $booking)
     {
+        // ✅ ИСПРАВЛЕНО: resource.model → resource.productModel
         $this->booking = $booking->load([
             'user',
             'place',
-            'resource.model',
+            'resource.productModel', // ✅ Исправлено
             'resource.zone',
             'slots',         
-            'equipment',     
+            'equipment.productModel', // ✅ Добавлено для оборудования
         ]);
     }
 
@@ -37,7 +38,7 @@ class BookingShow extends Component
 
     public function render()
     {
-        return view('livewire.admin.booking-show')->layout('admin.layout.app-livewire');
-
+        return view('livewire.admin.booking-show')
+            ->layout('admin.layout.app-livewire');
     }
 }

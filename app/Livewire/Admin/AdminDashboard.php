@@ -25,7 +25,7 @@ class AdminDashboard extends Component
             'bookings'      => Booking::count(),
             'bookings_paid' => Booking::where('payment_status', 'paid')->count(),
             'bookings_pending' => Booking::where('payment_status', 'pending')->count(),
-            'amount'        => Booking::where('payment_status', 'paid')->sum('total_amount') / 100, // конвертируем в рубли
+            'amount'        => Booking::where('payment_status', 'paid')->sum('total_amount'), // конвертируем в рубли
             'users'         => User::count(),
             'productTypes'  => ProductType::count(),
             'productModels' => ProductModel::count(),
@@ -53,7 +53,7 @@ class AdminDashboard extends Component
         $this->monthly = Booking::select(
                 DB::raw("strftime('%Y-%m', paid_at) as month"),
                 DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(total_amount) / 100.0 as amount')
+                DB::raw('SUM(total_amount) as amount')
             )
             ->where('payment_status', 'paid')
             ->whereNotNull('paid_at')

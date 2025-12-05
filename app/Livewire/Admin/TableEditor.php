@@ -76,23 +76,18 @@ class TableEditor extends Component
     {
         if (!$this->place) return;
         
-        // Получаем ID типа "стол"
-        $tableTypeId = ProductType::where('name', 'LIKE', '%стол%')
-            ->orWhere('name', 'LIKE', '%table%')
-            ->first()?->id;
+        // ✅ ИСПРАВЛЕНИЕ: Получаем только столы (type = 'table')
+        $allTables = Resource::where('place_id', $this->place->id)
+            ->where('type', 'table') // ✅ Только столы!
+            ->with(['productModel', 'zone', 'state']) // ✅ Правильное имя связи
+            ->get();
         
-        if (!$tableTypeId) {
-            session()->flash('warning', 'Не найден тип продукта "Стол". Создайте его сначала.');
+        if ($allTables->isEmpty()) {
+            $this->tablesOnGrid = [];
+            $this->tablesAvailable = [];
+            session()->flash('warning', 'В этом заведении нет столов. Создайте столы в разделе "Ресурсы".');
             return;
         }
-        
-        // Все столы этого места
-        $allTables = Resource::where('place_id', $this->place->id)
-            ->whereHas('model', function($q) use ($tableTypeId) {
-                $q->where('product_type_id', $tableTypeId);
-            })
-            ->with(['model', 'zone', 'state'])
-            ->get();
         
         // Разделяем на размещенные и доступные
         $this->tablesOnGrid = $allTables
@@ -113,7 +108,7 @@ class TableEditor extends Component
         return [
             'id' => $table->id,
             'code' => $table->code ?? 'N/A',
-            'model_name' => $table->model->name ?? 'Unknown',
+            'model_name' => $table->productModel->name ?? 'Unknown', // ✅ productModel
             'zone_id' => $table->zone_id,
             'zone_name' => $table->zone->name ?? 'Не назначена',
             'zone_color' => $table->zone->color ?? '#CCCCCC',
@@ -164,7 +159,7 @@ class TableEditor extends Component
             return;
         }
         
-        // ✅ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Определяем зону ОБЯЗАТЕЛЬНО
+        // ✅ Определяем зону ОБЯЗАТЕЛЬНО
         $zoneId = $this->detectZone($gridX, $gridY, $table['grid_width'], $table['grid_height']);
         
         // ✅ Если зона не найдена - ЗАПРЕЩАЕМ размещение!
@@ -177,13 +172,14 @@ class TableEditor extends Component
         Resource::where('id', $this->selectedTableId)->update([
             'grid_x' => $gridX,
             'grid_y' => $gridY,
-            'zone_id' => $zoneId, // Всегда с зоной
+            'zone_id' => $zoneId,
         ]);
         
         $this->loadTables();
         $this->selectedTableId = null;
         
-        session()->flash('success', "Стол размещен на позиции ({$gridX}, {$gridY})");
+        $zoneName = collect($this->zones)->firstWhere('id', $zoneId)['name'] ?? 'неизвестная';
+        session()->flash('success', "Стол размещен в зоне \"{$zoneName}\" на позиции ({$gridX}, {$gridY})");
     }
 
     /**
@@ -227,7 +223,7 @@ class TableEditor extends Component
         Resource::where('id', $tableId)->update([
             'grid_x' => $gridX,
             'grid_y' => $gridY,
-            'zone_id' => $zoneId, // ✅ Всегда обновляем зону!
+            'zone_id' => $zoneId,
         ]);
         
         $this->loadTables();
@@ -282,7 +278,7 @@ class TableEditor extends Component
             'rotation' => $newRotation,
             'grid_width' => $newWidth,
             'grid_height' => $newHeight,
-            'zone_id' => $zoneId, // ✅ Обновляем зону на всякий случай
+            'zone_id' => $zoneId,
         ]);
         
         $this->loadTables();
@@ -294,12 +290,10 @@ class TableEditor extends Component
      */
     public function removeTable($tableId)
     {
-        // ✅ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Обнуляем ВСЕ связи!
         Resource::where('id', $tableId)->update([
             'grid_x' => null,
             'grid_y' => null,
-            'zone_id' => null,  // ✅ Обнуляем зону!
-            // place_id НЕ трогаем - стол все еще принадлежит заведению
+            'zone_id' => null,
         ]);
         
         $this->loadTables();
@@ -365,8 +359,8 @@ class TableEditor extends Component
     }
 
     /**
-     * ✅ УЛУЧШЕННЫЙ метод определения зоны
-     * Теперь проверяет ВСЕ ячейки стола, а не только центр
+     * ✅ ИСПРАВЛЕННЫЙ метод определения зоны
+     * Проверяет ВСЕ ячейки стола
      */
     private function detectZone($x, $y, $width, $height, $rotation = 0)
     {
@@ -394,13 +388,22 @@ class TableEditor extends Component
             if (empty($zone['coordinates'])) continue;
             
             $matchCount = 0;
+            
             foreach ($tableCells as $cell) {
-                // Проверяем есть ли эта ячейка в координатах зоны
+                // ✅ ИСПРАВЛЕНИЕ: Правильная проверка наличия координаты в зоне
+                $found = false;
                 foreach ($zone['coordinates'] as $coord) {
-                    if ($coord['x'] == $cell['x'] && $coord['y'] == $cell['y']) {
-                        $matchCount++;
+                    // Сравниваем как числа, не как массивы
+                    if (isset($coord['x']) && isset($coord['y']) && 
+                        (int)$coord['x'] === (int)$cell['x'] && 
+                        (int)$coord['y'] === (int)$cell['y']) {
+                        $found = true;
                         break;
                     }
+                }
+                
+                if ($found) {
+                    $matchCount++;
                 }
             }
             

@@ -5,10 +5,7 @@
         <p class="text-xl text-gray-600 dark:text-gray-400">Управление личными данными и настройками аккаунта</p>
     </div>
 
-    <!-- Flash Messages -->
-    <x-flash-message type="success" :message="session('success')" />
-    <x-flash-message type="error" :message="session('error')" />
-
+ 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <!-- Личные данные -->
         <x-profile.card title="Личные данные" color="blue">

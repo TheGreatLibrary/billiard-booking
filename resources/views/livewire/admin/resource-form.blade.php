@@ -1,5 +1,27 @@
 <div class="max-w-4xl mx-auto bg-white shadow rounded-lg p-6 space-y-6">
     <form wire:submit.prevent="save" class="space-y-6">
+        <!-- Тип ресурса -->
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Тип ресурса</h3>
+            <div class="flex gap-4">
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" wire:model.live="type" value="table" 
+                           class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                    <span class="ml-2 text-sm font-medium text-gray-700">
+                        🎯 Стол (физический объект с координатами)
+                    </span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" wire:model.live="type" value="equipment" 
+                           class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                    <span class="ml-2 text-sm font-medium text-gray-700">
+                        🎱 Инвентарь (кий, мел, перчатка и т.д.)
+                    </span>
+                </label>
+            </div>
+            @error('type') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+        </div>
+
         <!-- Основная информация -->
         <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Основная информация</h3>
@@ -28,6 +50,7 @@
                     @error('place_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
+                @if($type === 'table')
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Зона *</label>
                     <select wire:model="zone_id"
@@ -39,6 +62,7 @@
                     </select>
                     @error('zone_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
+                @endif
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Состояние *</label>
@@ -59,22 +83,34 @@
                            placeholder="Например: T-01">
                     @error('code') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
+
+                @if($type === 'equipment')
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Количество *</label>
+                    <input type="number" wire:model="quantity" min="1"
+                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Количество единиц в наличии">
+                    @error('quantity') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    <p class="text-xs text-gray-500 mt-1">Общее количество единиц инвентаря</p>
+                </div>
+                @endif
             </div>
         </div>
 
-        <!-- Позиция на сетке -->
+        <!-- Позиция на сетке (только для столов) -->
+        @if($type === 'table')
         <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Позиция на сетке</h3>
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">X</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">X *</label>
                     <input type="number" wire:model="grid_x" min="0"
                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     @error('grid_x') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Y</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Y *</label>
                     <input type="number" wire:model="grid_y" min="0"
                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     @error('grid_y') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -105,6 +141,7 @@
                 Координаты и размеры используются для визуального редактора размещения ресурсов
             </p>
         </div>
+        @endif
 
         <!-- Примечание -->
         <div>

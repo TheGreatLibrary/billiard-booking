@@ -74,7 +74,7 @@
                     <div>
                         <span class="text-gray-600 dark:text-gray-400">Стоимость:</span>
                         <span class="font-bold text-lg text-gray-900 dark:text-white ml-2">
-                            {{ number_format(($booking->total_amount ?? 0) / 100, 0, '', ' ') }} ₽
+                            {{ number_format(($booking->total_amount ?? 0), 0, '', ' ') }} ₽
                         </span>
                     </div>
                 </div>

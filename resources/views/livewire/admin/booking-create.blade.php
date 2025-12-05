@@ -1,19 +1,34 @@
 <div class="max-w-7xl mx-auto p-6">
     {{-- Flash сообщения --}}
     @if (session()->has('error'))
-        <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            <strong>Ошибка:</strong> {{ session('error') }}
+        <div class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start">
+            <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <span><strong>Ошибка:</strong> {{ session('error') }}</span>
         </div>
     @endif
 
     @if (session()->has('success'))
-        <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-            <strong>Успех:</strong> {{ session('success') }}
+        <div class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-lg flex items-start">
+            <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span><strong>Успех:</strong> {{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if (session()->has('warning'))
+        <div class="mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg flex items-start">
+            <svg class="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <span>{{ session('warning') }}</span>
         </div>
     @endif
 
     @if (session()->has('info'))
-        <div class="mb-6 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg">
+        <div class="mb-6 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 rounded-lg">
             {{ session('info') }}
         </div>
     @endif
@@ -58,7 +73,7 @@
         </div>
     @endif
 
-    {{-- ШАГ 2: Визуальный выбор стола (УЛУЧШЕННАЯ ВЕРСИЯ) --}}
+    {{-- ШАГ 2: Визуальный выбор стола (ИСПРАВЛЕНО) --}}
     @if($step === 2)
         <div class="bg-white rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
@@ -98,30 +113,35 @@
                     @endphp
 
                     <div class="relative grid gap-0" 
-                         style="grid-template-columns: repeat({{ $gridWidth }}, 1fr); 
-                                grid-template-rows: repeat({{ $gridHeight }}, 1fr);">
+                         style="grid-template-columns: repeat({{ $gridWidth }}, minmax(50px, 1fr)); 
+                                grid-template-rows: repeat({{ $gridHeight }}, minmax(50px, 1fr));">
                         
                         {{-- Ячейки сетки с зонами --}}
                         @for($y = 0; $y < $gridHeight; $y++)
                             @for($x = 0; $x < $gridWidth; $x++)
                                 @php
-                                    // Определяем зону ячейки
+                                    // ✅ ИСПРАВЛЕНО: Правильное определение зоны ячейки
                                     $cellZone = null;
                                     foreach($zones as $zone) {
                                         $coordinates = is_string($zone['coordinates']) 
                                             ? json_decode($zone['coordinates'], true) 
                                             : ($zone['coordinates'] ?? []);
                                         
-                                        if(in_array(['x' => $x, 'y' => $y], $coordinates)) {
-                                            $cellZone = $zone;
-                                            break;
+                                        if (!empty($coordinates)) {
+                                            foreach ($coordinates as $coord) {
+                                                if (isset($coord['x']) && isset($coord['y']) && 
+                                                    (int)$coord['x'] === $x && (int)$coord['y'] === $y) {
+                                                    $cellZone = $zone;
+                                                    break 2;
+                                                }
+                                            }
                                         }
                                     }
                                 @endphp
                                 
                                 <div class="aspect-square border border-gray-200 relative"
                                      style="background-color: {{ $cellZone ? ($cellZone['color'] ?? '#3B82F6') : 'white' }};
-                                            opacity: {{ $cellZone ? '0.2' : '1' }};
+                                            opacity: {{ $cellZone ? '0.3' : '1' }};
                                             min-width: 50px;
                                             min-height: 50px;">
                                 </div>
@@ -141,32 +161,31 @@
                                 
                                 $isSelected = $resource_id === $resource['id'];
                                 
-                                // Проверяем доступность стола (если ключ state существует)
-                                $isAvailable = true; // По умолчанию доступен
+                                // Проверяем доступность стола
+                                $isAvailable = true;
                                 if (isset($resource['state'])) {
-                                    $isAvailable = in_array(strtolower($resource['state']), ['available', 'доступен']);
+                                    $isAvailable = in_array(strtolower($resource['state']), ['available', 'active', 'доступен']);
                                 }
                             @endphp
                             
-                          <button
+                            <button
                                 wire:click="selectResource({{ $resource['id'] }})"
                                 @disabled(!$isAvailable)
-                                class="bg-green-600 absolute flex flex-col items-center justify-center
-                                       border-2 rounded-lg transition-all duration-200
+                                class="absolute flex flex-col items-center justify-center
+                                       border-3 rounded-lg transition-all duration-200
                                        {{ $isSelected 
-                                          ? 'border-blue-500 bg-blue-200 shadow-xl ring-4 ring-blue-200 z-20 scale-105' 
+                                          ? 'border-blue-500 bg-blue-200 shadow-xl ring-4 ring-blue-300 z-20 scale-105' 
                                           : ($isAvailable 
-                                             ? 'border-green-600 bg-gray-300 hover:border-green-500 hover:bg-green-50 hover:shadow-lg z-10 cursor-pointer' 
-                                             : 'border-gray-400 bg-gray-200 cursor-not-allowed z-10') }}"
-                                style="grid-column: {{ $resource['grid_x'] + 1 }} / span {{ $displayWidth +50 }};
-                                       grid-row: {{ $resource['grid_y'] + 1 }} / span {{ $displayHeight +50}};
-                                       transform: rotate({{ $resource['rotation'] }}deg);
-                                       transform-origin: center center;">
-                                <div class="text-center pointer-events-none">
-                                    <div class="text-base font-bold {{ $isSelected ? 'text-blue-900' : ($isAvailable ? 'text-green-900' : 'text-gray-600') }}">
+                                             ? 'border-green-600 bg-white hover:border-green-500 hover:bg-green-50 hover:shadow-lg z-10 cursor-pointer' 
+                                             : 'border-gray-400 bg-gray-200 cursor-not-allowed opacity-60 z-10') }}"
+                                style="grid-column: {{ $resource['grid_x'] + 1 }} / span {{ $displayWidth }};
+                                       grid-row: {{ $resource['grid_y'] + 1 }} / span {{ $displayHeight }};
+                                       border-width: 3px;">
+                                <div class="text-center pointer-events-none p-1">
+                                    <div class="text-sm font-bold {{ $isSelected ? 'text-blue-900' : ($isAvailable ? 'text-green-900' : 'text-gray-600') }}">
                                         {{ $resource['code'] }}
                                     </div>
-                                    <div class="text-xs {{ $isSelected ? 'text-blue-700' : ($isAvailable ? 'text-white' : 'text-gray-500') }} truncate max-w-full px-1">
+                                    <div class="text-xs {{ $isSelected ? 'text-blue-700' : ($isAvailable ? 'text-gray-700' : 'text-gray-500') }} truncate max-w-full">
                                         {{ $resource['model_name'] ?? 'N/A' }}
                                     </div>
                                     @if(!$isAvailable)
@@ -204,15 +223,15 @@
                     <h3 class="text-sm font-medium text-gray-700 mb-2">📊 Статусы столов:</h3>
                     <div class="space-y-2">
                         <div class="flex items-center">
-                            <div class="w-6 h-6 bg-green-50 border-2 border-green-600 rounded mr-2"></div>
+                            <div class="w-6 h-6 bg-white border-3 border-green-600 rounded mr-2"></div>
                             <span class="text-sm">Доступен для бронирования</span>
                         </div>
                         <div class="flex items-center">
-                            <div class="w-6 h-6 bg-blue-100 border-2 border-blue-500 rounded mr-2"></div>
+                            <div class="w-6 h-6 bg-blue-100 border-3 border-blue-500 rounded mr-2"></div>
                             <span class="text-sm">Выбранный стол</span>
                         </div>
                         <div class="flex items-center">
-                            <div class="w-6 h-6 bg-gray-200 border-2 border-gray-400 rounded mr-2 opacity-50"></div>
+                            <div class="w-6 h-6 bg-gray-200 border-3 border-gray-400 rounded mr-2 opacity-60"></div>
                             <span class="text-sm">Занят / Недоступен</span>
                         </div>
                     </div>
@@ -233,7 +252,7 @@
         </div>
     @endif
 
-    {{-- ШАГ 3: Выбор времени (УЛУЧШЕННАЯ ВЕРСИЯ - В СТРОЧКУ) --}}
+    {{-- ШАГ 3: Выбор времени --}}
     @if($step === 3)
         <div class="bg-white rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
@@ -291,7 +310,7 @@
                                     <div class="font-bold text-xl mb-1">{{ $time }}</div>
                                     @if($slot['available'])
                                         <div class="text-sm {{ in_array($time, $selectedSlots) ? 'text-blue-100' : 'text-gray-600' }}">
-                                            {{ number_format($slot['price'] / 100, 0) }} ₽
+                                            {{ number_format($slot['price'], 0) }} ₽
                                         </div>
                                     @else
                                         <div class="text-sm font-medium text-red-600">Занято</div>
@@ -330,7 +349,7 @@
                         <div class="ml-4 text-right">
                             <p class="text-sm text-gray-600">Стоимость:</p>
                             <p class="text-2xl font-bold text-green-600">
-                                {{ number_format($totalAmount / 100, 0) }} ₽
+                                {{ number_format($totalAmount, 0) }} ₽
                             </p>
                         </div>
                     </div>
@@ -365,7 +384,7 @@
                 <div>
                     <p class="text-sm text-gray-600">Итого к оплате:</p>
                     <p class="text-3xl font-bold text-green-600">
-                        {{ number_format($totalAmount / 100, 0) }} ₽
+                        {{ number_format($totalAmount, 0) }} ₽
                     </p>
                 </div>
                 <button wire:click="proceedToEquipment"
@@ -380,60 +399,124 @@
         </div>
     @endif
 
-    {{-- ШАГ 4: Оборудование --}}
+    {{-- ШАГ 4: Оборудование (ИСПРАВЛЕНО) --}}
     @if($step === 4)
         <div class="bg-white rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">Дополнительное оборудование</h2>
-                <button wire:click="goBack" class="text-gray-600 hover:text-gray-900">← Назад</button>
+                <button wire:click="goBack" class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded hover:bg-gray-100">
+                    ← Назад
+                </button>
             </div>
 
             @if(count($availableEquipment) > 0)
-                <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     @foreach($availableEquipment as $eq)
-                        <div class="border rounded-lg p-4">
-                            <h3 class="font-medium">{{ $eq['name'] }}</h3>
-                            <p class="text-sm text-gray-500 mb-3">{{ number_format($eq['price'] / 100, 0) }} ₽</p>
-                            <button wire:click="addEquipment({{ $eq['id'] }})"
-                                    class="w-full bg-blue-500 text-white px-3 py-2 rounded text-sm">
-                                + Добавить
+                        <div class="border-2 rounded-lg p-4 hover:border-blue-400 hover:shadow-md transition">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg">{{ $eq['name'] }}</h3>
+                                    <p class="text-xs text-gray-500">Код: {{ $eq['code'] }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-bold text-green-600">{{ number_format($eq['price'], 0) }} ₽</div>
+                                    <div class="text-xs text-gray-500">за единицу</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 p-2 bg-gray-50 rounded text-center">
+                                <span class="text-sm text-gray-700">
+                                    Доступно: <strong class="text-blue-600">{{ $eq['available_qty'] }}</strong> из {{ $eq['total_qty'] }}
+                                </span>
+                            </div>
+                            
+                            <button wire:click="addEquipment({{ $eq['resource_id'] }})"
+                                    @disabled($eq['available_qty'] < 1)
+                                    class="w-full py-2 rounded transition
+                                           {{ $eq['available_qty'] > 0
+                                              ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                              : 'bg-gray-200 text-gray-500 cursor-not-allowed' }}">
+                                {{ $eq['available_qty'] > 0 ? '+ Добавить' : 'Недоступно' }}
                             </button>
                         </div>
                     @endforeach
+                </div>
+            @else
+                <div class="text-center py-12 bg-gray-50 rounded-lg">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">Нет доступного оборудования на выбранное время</p>
                 </div>
             @endif
 
             {{-- Выбранное оборудование --}}
             @if(count($equipment) > 0)
                 <div class="mb-6">
-                    <h3 class="font-medium mb-3">Добавлено:</h3>
-                    @foreach($equipment as $index => $item)
-                        <div class="flex items-center justify-between bg-gray-50 p-3 rounded mb-2">
-                            <div>
-                                <p class="font-medium">{{ $item['name'] }}</p>
-                                <p class="text-sm text-gray-500">{{ number_format($item['price'] / 100, 0) }} ₽</p>
+                    <h3 class="font-medium text-lg mb-3">📦 Добавлено в корзину:</h3>
+                    <div class="space-y-3">
+                        @foreach($equipment as $index => $item)
+                            <div class="flex items-center justify-between bg-blue-50 border-2 border-blue-200 p-4 rounded-lg">
+                                <div class="flex-1">
+                                    <p class="font-bold">{{ $item['name'] }}</p>
+                                    <p class="text-sm text-gray-600">
+                                        {{ number_format($item['price'], 0) }} ₽ × {{ $item['qty'] }} = 
+                                        <span class="font-semibold text-green-600">
+                                            {{ number_format(($item['price'] * $item['qty']), 0) }} ₽
+                                        </span>
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-1">Максимум доступно: {{ $item['max_qty'] }}</p>
+                                </div>
+                                <div class="flex items-center gap-3 ml-4">
+                                    <div class="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden">
+                                        <button wire:click="updateEquipmentQty({{ $index }}, {{ max(1, $item['qty'] - 1) }})"
+                                                class="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition">
+                                            −
+                                        </button>
+                                        <input type="number" 
+                                               value="{{ $item['qty'] }}"
+                                               wire:change="updateEquipmentQty({{ $index }}, $event.target.value)"
+                                               min="1" 
+                                               max="{{ $item['max_qty'] }}"
+                                               class="w-16 border-0 text-center font-bold py-2">
+                                        <button wire:click="updateEquipmentQty({{ $index }}, {{ min($item['max_qty'], $item['qty'] + 1) }})"
+                                                @disabled($item['qty'] >= $item['max_qty'])
+                                                class="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition
+                                                       {{ $item['qty'] >= $item['max_qty'] ? 'opacity-50 cursor-not-allowed' : '' }}">
+                                            +
+                                        </button>
+                                    </div>
+                                    <button wire:click="removeEquipment({{ $index }})"
+                                            class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <input type="number" 
-                                       value="{{ $item['qty'] }}"
-                                       wire:change="updateEquipmentQty({{ $index }}, $event.target.value)"
-                                       min="1" 
-                                       class="w-16 border rounded px-2 py-1 text-center">
-                                <button wire:click="removeEquipment({{ $index }})"
-                                        class="text-red-600 hover:text-red-800">✕</button>
-                            </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             @endif
 
-            <div class="flex justify-between">
+            {{-- Итого и кнопки --}}
+            <div class="flex justify-between items-center pt-6 border-t-2">
                 <button wire:click="skipEquipment" 
-                        class="text-gray-600 hover:text-gray-900">Пропустить</button>
-                <button wire:click="proceedToClientData" 
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg">
-                    Далее →
+                        class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded hover:bg-gray-100">
+                    Пропустить
                 </button>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-sm text-gray-600">Итого:</p>
+                        <p class="text-2xl font-bold text-green-600">
+                            {{ number_format($totalAmount, 0) }} ₽
+                        </p>
+                    </div>
+                    <button wire:click="proceedToClientData" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium text-lg transition">
+                        Далее →
+                    </button>
+                </div>
             </div>
         </div>
     @endif
@@ -443,7 +526,9 @@
         <div class="bg-white rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold">Ваши данные</h2>
-                <button wire:click="goBack" class="text-gray-600 hover:text-gray-900">← Назад</button>
+                <button wire:click="goBack" class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded hover:bg-gray-100">
+                    ← Назад
+                </button>
             </div>
 
             @guest
@@ -451,25 +536,25 @@
                     <div>
                         <label class="block font-medium mb-2">Имя *</label>
                         <input type="text" wire:model="guest_name" 
-                               class="w-full border rounded px-3 py-2">
+                               class="w-full border-2 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                         @error('guest_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
                         <label class="block font-medium mb-2">Email *</label>
                         <input type="email" wire:model="guest_email" 
-                               class="w-full border rounded px-3 py-2">
+                               class="w-full border-2 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                         @error('guest_email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
                         <label class="block font-medium mb-2">Телефон</label>
                         <input type="tel" wire:model="guest_phone" 
-                               class="w-full border rounded px-3 py-2">
+                               class="w-full border-2 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                     </div>
                 </div>
             @else
-                <div class="p-4 bg-green-50 rounded mb-6">
+                <div class="p-4 bg-green-50 rounded-lg mb-6">
                     <p>Бронирование на имя: <strong>{{ auth()->user()->name }}</strong></p>
                     <p class="text-sm text-gray-600">{{ auth()->user()->email }}</p>
                 </div>
@@ -478,19 +563,20 @@
             <div class="mb-6">
                 <label class="block font-medium mb-2">Комментарий</label>
                 <textarea wire:model="comment" rows="3" 
-                          class="w-full border rounded px-3 py-2"></textarea>
+                          class="w-full border-2 rounded-lg px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                          placeholder="Укажите особые пожелания или дополнительную информацию"></textarea>
             </div>
 
             {{-- Итого --}}
-            <div class="p-4 bg-gray-50 rounded mb-6">
+            <div class="p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg mb-6 border-2 border-green-200">
                 <div class="flex justify-between items-center">
                     <span class="text-lg font-medium">ИТОГО к оплате:</span>
-                    <span class="text-3xl font-bold text-green-600">{{ number_format($totalAmount / 100, 2) }} ₽</span>
+                    <span class="text-4xl font-bold text-green-600">{{ number_format($totalAmount, 0) }} ₽</span>
                 </div>
             </div>
 
             <button wire:click="createPendingBooking" 
-                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium text-lg">
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-4 rounded-lg font-medium text-lg transition shadow-lg hover:shadow-xl">
                 Перейти к оплате →
             </button>
         </div>
@@ -501,31 +587,39 @@
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold mb-6">Оплата</h2>
 
-            <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
+            <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                 <p class="text-sm">⏱ Бронирование действительно в течение <strong>30 минут</strong></p>
                 <p class="text-sm text-gray-600">Истекает: {{ $booking->expires_at->format('d.m.Y H:i') }}</p>
             </div>
 
             <div class="space-y-3 mb-6">
                 <button wire:click="payBooking('card')"
-                        class="w-full p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left">
-                    💳 Оплатить картой
+                        class="w-full p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left flex items-center transition">
+                    <span class="text-2xl mr-3">💳</span>
+                    <div>
+                        <div class="font-medium">Оплатить картой</div>
+                        <div class="text-sm text-gray-500">Visa, MasterCard, Мир</div>
+                    </div>
                 </button>
 
                 <button wire:click="payBooking('online')"
-                        class="w-full p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left">
-                    🌐 Оплатить онлайн (СБП)
+                        class="w-full p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left flex items-center transition">
+                    <span class="text-2xl mr-3">🌐</span>
+                    <div>
+                        <div class="font-medium">Оплатить онлайн</div>
+                        <div class="text-sm text-gray-500">СБП, Онлайн-банк</div>
+                    </div>
                 </button>
             </div>
 
             <button wire:click="skipPayment" 
-                    class="w-full text-center text-gray-600 hover:text-gray-900">
+                    class="w-full text-center text-gray-600 hover:text-gray-900 py-2 hover:bg-gray-100 rounded transition">
                 Оплатить позже
             </button>
         </div>
     @endif
 
-     {{-- ШАГ 7: Успех --}}
+    {{-- ШАГ 7: Успех --}}
     @if($step === 7 && $booking)
         <div class="bg-white rounded-lg shadow-lg p-6 text-center">
             <div class="mb-6">
@@ -547,26 +641,26 @@
             </div>
 
             <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                <h3 class="font-bold mb-4">Детали бронирования:</h3>
+                <h3 class="font-bold mb-4 text-lg">Детали бронирования:</h3>
                 
-                <div class="space-y-2">
-                    <div class="flex justify-between">
+                <div class="space-y-3">
+                    <div class="flex justify-between py-2 border-b">
                         <span class="text-gray-600">Номер бронирования:</span>
                         <span class="font-bold">#{{ $booking->id }}</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between py-2 border-b">
                         <span class="text-gray-600">Место:</span>
                         <span class="font-medium">{{ $booking->place->name }}</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between py-2 border-b">
                         <span class="text-gray-600">Стол:</span>
                         <span class="font-medium">{{ $booking->resource->code }}</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between py-2 border-b">
                         <span class="text-gray-600">Дата:</span>
                         <span class="font-medium">{{ $booking->slots->first()->slot_date ?? 'N/A' }}</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between py-2 border-b">
                         <span class="text-gray-600">Время:</span>
                         <span class="font-medium">
                             @foreach($booking->slots as $slot)
@@ -574,12 +668,12 @@
                             @endforeach
                         </span>
                     </div>
-                    <div class="flex justify-between border-t pt-2">
-                        <span class="text-gray-600 font-bold">Итого:</span>
-                        <span class="font-bold text-lg text-green-600">{{ $booking->getTotalAmountFormatted() }}</span>
+                    <div class="flex justify-between pt-3 border-t-2">
+                        <span class="text-gray-800 font-bold text-lg">Итого:</span>
+                        <span class="font-bold text-2xl text-green-600">{{ $booking->getTotalAmountFormatted() }}</span>
                     </div>
                     @if($booking->isPaid())
-                    <div class="flex justify-between">
+                    <div class="flex justify-between py-2">
                         <span class="text-gray-600">Оплачено:</span>
                         <span class="text-green-600 font-medium">✓ {{ $booking->payment_method }}</span>
                     </div>
@@ -588,20 +682,20 @@
             </div>
 
             @if(!$booking->isPaid())
-            <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
+            <div class="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                 <p class="text-sm">⚠️ Не забудьте оплатить в течение <strong>30 минут</strong></p>
                 <p class="text-sm text-gray-600">Иначе бронирование будет автоматически отменено</p>
             </div>
             @endif
 
             <div class="space-y-3">
-                <a href="/" class="block w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium">
+                <a href="/" class="block w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition">
                     На главную
                 </a>
                 
                 @if(!$booking->isPaid())
                 <button wire:click="$set('step', 6)" 
-                        class="block w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium">
+                        class="block w-full bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition">
                     Оплатить сейчас
                 </button>
                 @endif
@@ -629,6 +723,11 @@
     
     .overflow-x-auto::-webkit-scrollbar-thumb:hover {
         background: #2563EB;
+    }
+    
+    /* Стили для borders */
+    .border-3 {
+        border-width: 3px;
     }
 </style>
 @endpush

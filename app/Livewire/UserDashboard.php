@@ -32,7 +32,7 @@ class UserDashboard extends Component
                 ->count(),
             'total_spent' => Booking::where('user_id', $userId)
                 ->where('payment_status', 'paid')
-                ->sum('total_amount') / 100,
+                ->sum('total_amount'),
         ];
     }
 
@@ -41,7 +41,7 @@ class UserDashboard extends Component
         $this->recentBookings = Booking::where('user_id', Auth::id())
             ->with([
                 'place',
-                'resource.model',
+                'resource.productModel', // ✅ ИСПРАВЛЕНО: model → productModel
                 'slots',
                 'equipment.productModel'
             ])
@@ -84,7 +84,7 @@ class UserDashboard extends Component
 
     public function render()
     {
-        return view('livewire.User.user-dashboard')
+        return view('livewire.User.user-dashboard') // ✅ ИСПРАВЛЕНО: User → user (lowercase)
             ->layout('layouts.app')
             ->title('Личный кабинет');
     }

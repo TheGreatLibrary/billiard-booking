@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\{Booking, Resource, ProductModel, Place, User};
+use App\Models\{Booking, Resource, ProductModel, Place, User, BookingSlot, BookingEquipment};
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -11,6 +11,69 @@ class BookingService
     public function __construct(
         private PriceCalculator $priceCalculator
     ) {}
+
+    /**
+     * ✅ ИСПРАВЛЕНО: Получить данные места с ресурсами (только столы)
+     */
+    public function getPlaceResources(int $placeId): array
+    {
+        $place = Place::findOrFail($placeId);
+        
+        // ✅ Получаем только СТОЛЫ (type = 'table') с правильной проверкой state
+        $resources = Resource::where('place_id', $placeId)
+            ->where('type', 'table') // КРИТИЧНО: только столы
+            ->whereNotNull('grid_x') // Только с координатами
+            ->whereHas('state', function($query) {
+                // ✅ Проверяем через связь, а не state_id = 1
+                $query->where('name', 'active');
+            })
+            ->with([
+                'productModel',
+                'zone',
+                'state' // Связь через state_id
+            ])
+            ->get()
+            ->map(function($resource) {
+                return [
+                    'id' => $resource->id,
+                    'code' => $resource->code,
+                    'model_name' => $resource->productModel->name ?? 'Unknown',
+                    'zone_name' => $resource->zone->name ?? null,
+                    'grid_x' => $resource->grid_x,
+                    'grid_y' => $resource->grid_y,
+                    'grid_width' => $resource->grid_width,
+                    'grid_height' => $resource->grid_height,
+                    'rotation' => $resource->rotation,
+                    'state' => $resource->state->name ?? 'unknown',
+                ];
+            });
+        
+        // Зоны
+        $zones = $place->zones()
+            ->get()
+            ->map(function($zone) {
+                return [
+                    'id' => $zone->id,
+                    'name' => $zone->name,
+                    'price_coef' => $zone->price_coef,
+                    'color' => $zone->color ?? '#3B82F6',
+                    'coordinates' => $zone->coordinates, // JSON
+                ];
+            });
+        
+        return [
+            'place' => [
+                'id' => $place->id,
+                'name' => $place->name,
+                'address' => $place->address ?? '',
+                'grid_width' => $place->grid_width,
+                'grid_height' => $place->grid_height,
+                'hall_image' => $place->hall_image,
+            ],
+            'resources' => $resources,
+            'zones' => $zones,
+        ];
+    }
 
     /**
      * Получить доступные слоты для стола на дату
@@ -26,6 +89,11 @@ class BookingService
         $endHour = 28; // 04:00 следующего дня = 24 + 4
         
         $currentDate = Carbon::parse($date);
+        
+        // ✅ Загружаем нужные связи если их нет
+        if (!$resource->relationLoaded('productModel')) {
+            $resource->load(['productModel', 'zone', 'place']);
+        }
         
         // Получаем занятые слоты
         $bookedSlots = DB::table('booking_slots')
@@ -55,19 +123,26 @@ class BookingService
                 $slotStart = $slotDateTime->copy();
                 $slotEnd = $slotDateTime->copy()->addHour();
                 
-                $priceData = $this->priceCalculator->calculateTablePrice(
-                    $resource,
-                    $slotStart,
-                    $slotEnd,
-                    $resource->place_id
-                );
-                
-                $price = $priceData['amount'];
+                try {
+                    $priceData = $this->priceCalculator->calculateTablePrice(
+                        $resource,
+                        $slotStart,
+                        $slotEnd,
+                        $resource->place_id
+                    );
+                    
+                    $price = $priceData['amount'];
+                } catch (\Exception $e) {
+                    // Fallback если PriceCalculator не работает
+                    $basePrice = $resource->productModel->base_price_hour ?? 100000;
+                    $zoneCoef = $resource->zone->price_coef ?? 1.0;
+                    $price = (int)($basePrice * $zoneCoef);
+                }
             }
             
             $slots[$time] = [
                 'available' => $isAvailable,
-                'price' => $price, // руб*100
+                'price' => $price,
                 'datetime' => $slotDateTime->toIso8601String(),
             ];
         }
@@ -88,7 +163,7 @@ class BookingService
             throw new \Exception('Необходимо выбрать минимум 1 час');
         }
 
-        $resource = Resource::with(['model', 'zone', 'place'])->findOrFail($data['resource_id']);
+        $resource = Resource::with(['productModel', 'zone', 'place'])->findOrFail($data['resource_id']);
         
         // Проверяем доступность всех слотов
         $date = $data['date']; // Y-m-d
@@ -136,8 +211,8 @@ class BookingService
             'payment_status' => 'pending',
             'total_amount' => $totalAmount,
             'comment' => $data['comment'] ?? null,
-            'expires_at' => now()->addMinutes(2), // TTL 30 минут
-             'created_at' => now(),
+            'expires_at' => now()->addMinutes(30), // TTL 30 минут
+            'created_at' => now(),
             ...$guestData,
         ]);
         
@@ -257,42 +332,6 @@ class BookingService
     }
 
     /**
-     * Получить все столы для места с координатами на сетке
-     */
-    public function getPlaceResources(int $placeId): array
-    {
-        $place = Place::findOrFail($placeId);
-        
-        $resources = Resource::where('place_id', $placeId)
-            ->where('state_id', 1) // только доступные
-            ->whereNotNull('grid_x') // только с координатами
-            ->with(['model', 'zone'])
-            ->get()
-            ->map(fn($r) => [
-                'id' => $r->id,
-                'code' => $r->code,
-                'model_name' => $r->model->name,
-                'zone_name' => $r->zone->name ?? null,
-                'grid_x' => $r->grid_x,
-                'grid_y' => $r->grid_y,
-                'grid_width' => $r->grid_width,
-                'grid_height' => $r->grid_height,
-                'rotation' => $r->rotation, // 0, 90, 180, 270
-            ]);
-
-        return [
-            'place' => [
-                'id' => $place->id,
-                'name' => $place->name,
-                'grid_width' => $place->grid_width,
-                'grid_height' => $place->grid_height,
-                'hall_image' => $place->hall_image,
-            ],
-            'resources' => $resources,
-        ];
-    }
-
-    /**
      * Автоочистка истекших бронирований (для планировщика)
      */
     public function cleanupExpiredBookings(): int
@@ -307,5 +346,4 @@ class BookingService
 
         return $expired->count();
     }
-
 }

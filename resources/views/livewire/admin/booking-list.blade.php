@@ -63,7 +63,10 @@
                         <td class="px-6 py-4">{{ $booking->place->name }}</td>
                         <td class="px-6 py-4">
                             <div class="text-sm">{{ $booking->resource->code ?? 'N/A' }}</div>
-                            <div class="text-xs text-gray-500">{{ $booking->resource->model->name }}</div>
+                            {{-- ✅ ИСПРАВЛЕНО: model → productModel --}}
+                            <div class="text-xs text-gray-500">
+                                {{ $booking->resource->productModel->name ?? 'Unknown' }}
+                            </div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm">{{ $booking->created_at->format('d.m.Y') }}</div>

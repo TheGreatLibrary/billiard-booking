@@ -49,45 +49,45 @@ class BookingCreate extends Component
     }
 
     /**
- * Быстрый выбор нескольких часов подряд
- */
-public function quickSelect($hours)
-{
-    $this->selectedSlots = [];
-    
-    $availableTimes = array_keys(array_filter($this->availableSlots, fn($slot) => $slot['available']));
-    
-    // Берем первые N доступных слотов
-    $slotsToSelect = array_slice($availableTimes, 0, $hours);
-    
-    foreach ($slotsToSelect as $time) {
-        $this->selectedSlots[] = $time;
+     * Быстрый выбор нескольких часов подряд
+     */
+    public function quickSelect($hours)
+    {
+        $this->selectedSlots = [];
+        
+        $availableTimes = array_keys(array_filter($this->availableSlots, fn($slot) => $slot['available']));
+        
+        // Берем первые N доступных слотов
+        $slotsToSelect = array_slice($availableTimes, 0, $hours);
+        
+        foreach ($slotsToSelect as $time) {
+            $this->selectedSlots[] = $time;
+        }
+        
+        $this->calculateTotal();
     }
-    
-    $this->calculateTotal();
-}
 
-/**
- * Очистить выбранные слоты
- */
-public function clearSlots()
-{
-    $this->selectedSlots = [];
-    $this->calculateTotal();
-}
-
-/**
- * Переход к выбору времени (для кнопки на шаге 2)
- */
-public function proceedToTimeSelection()
-{
-    if (!$this->resource_id) {
-        session()->flash('error', 'Выберите стол');
-        return;
+    /**
+     * Очистить выбранные слоты
+     */
+    public function clearSlots()
+    {
+        $this->selectedSlots = [];
+        $this->calculateTotal();
     }
-    
-    $this->step = 3;
-}
+
+    /**
+     * Переход к выбору времени (для кнопки на шаге 2)
+     */
+    public function proceedToTimeSelection()
+    {
+        if (!$this->resource_id) {
+            session()->flash('error', 'Выберите стол');
+            return;
+        }
+        
+        $this->step = 3;
+    }
 
     private function loadPlaceData()
     {
@@ -147,37 +147,83 @@ public function proceedToTimeSelection()
         $this->step = 4;
     }
 
-    // ШАГ 4: Выбор оборудования
+    // ✅ ШАГ 4: Выбор оборудования (ИСПРАВЛЕНО)
     private function loadAvailableEquipment()
     {
-        $equipmentType = ProductType::where('name', 'equipment')->first();
+        if (!$this->place_id) return;
         
-        if ($equipmentType) {
-            $this->availableEquipment = $equipmentType->models()
-                ->get()
-                ->map(fn($e) => [
-                    'id' => $e->id,
-                    'name' => $e->name,
-                    'price' => $e->base_price_each ?? $e->base_price_hour,
-                ]);
-        }
+        // ✅ Получаем только equipment ресурсы этого места
+        $this->availableEquipment = Resource::where('place_id', $this->place_id)
+            ->where('type', 'equipment')
+            ->where('quantity', '>', 0)
+            ->whereHas('state', function($q) {
+                $q->where('name', 'active');
+            })
+            ->with('productModel')
+            ->get()
+            ->map(function($resource) {
+                return [
+                    'resource_id' => $resource->id,
+                    'model_id' => $resource->model_id,
+                    'name' => $resource->productModel->name ?? 'Unknown',
+                    'code' => $resource->code,
+                    'price' => $resource->productModel->base_price_each ?? 0,
+                    'available_qty' => $this->getAvailableEquipmentQty($resource),
+                    'total_qty' => $resource->quantity,
+                ];
+            })
+            ->filter(fn($eq) => $eq['available_qty'] > 0); // Только с доступным количеством
     }
 
-    public function addEquipment($modelId)
+    /**
+     * ✅ Получить доступное количество инвентаря для выбранных слотов
+     */
+    private function getAvailableEquipmentQty(Resource $resource)
+    {
+        if (empty($this->selectedSlots) || !$this->date) {
+            return $resource->quantity;
+        }
+        
+        $minAvailable = $resource->quantity;
+        
+        // Проверяем каждый выбранный слот
+        foreach ($this->selectedSlots as $time) {
+            $available = $resource->getAvailableQuantity($this->date, $time);
+            $minAvailable = min($minAvailable, $available);
+        }
+        
+        return $minAvailable;
+    }
+
+    public function addEquipment($resourceId)
     {
         // Проверяем, не добавлен ли уже
         foreach ($this->equipment as $item) {
-            if ($item['model_id'] == $modelId) {
-                return; // уже добавлен
+            if ($item['resource_id'] == $resourceId) {
+                session()->flash('warning', 'Этот инвентарь уже добавлен');
+                return;
             }
         }
 
-        $model = ProductModel::findOrFail($modelId);
+        $equipmentItem = collect($this->availableEquipment)->firstWhere('resource_id', $resourceId);
+        
+        if (!$equipmentItem) {
+            session()->flash('error', 'Инвентарь не найден');
+            return;
+        }
+        
+        if ($equipmentItem['available_qty'] < 1) {
+            session()->flash('error', 'Инвентарь недоступен на выбранное время');
+            return;
+        }
+
         $this->equipment[] = [
-            'model_id' => $model->id,
-            'name' => $model->name,
-            'price' => $model->base_price_each ?? $model->base_price_hour,
+            'resource_id' => $equipmentItem['resource_id'],
+            'model_id' => $equipmentItem['model_id'],
+            'name' => $equipmentItem['name'],
+            'price' => $equipmentItem['price'],
             'qty' => 1,
+            'max_qty' => $equipmentItem['available_qty'], // Для валидации
         ];
 
         $this->calculateTotal();
@@ -192,7 +238,19 @@ public function proceedToTimeSelection()
 
     public function updateEquipmentQty($index, $qty)
     {
-        if ($qty < 1) $qty = 1;
+        $qty = (int) $qty;
+        
+        if ($qty < 1) {
+            $qty = 1;
+        }
+        
+        // ✅ Проверяем максимальное доступное количество
+        $maxQty = $this->equipment[$index]['max_qty'] ?? 999;
+        if ($qty > $maxQty) {
+            $qty = $maxQty;
+            session()->flash('warning', "Доступно только {$maxQty} единиц");
+        }
+        
         $this->equipment[$index]['qty'] = $qty;
         $this->calculateTotal();
     }
@@ -232,7 +290,7 @@ public function proceedToTimeSelection()
             return;
         }
 
-         try {
+        try {
             $this->booking = $service->createPendingBooking([
                 'user_id' => $userId,
                 'resource_id' => $this->resource_id,
@@ -269,7 +327,7 @@ public function proceedToTimeSelection()
         try {
             $service->payBooking($this->booking, $method);
             
-           // Просто показываем сообщение и остаёмся на странице
+            // Просто показываем сообщение и остаёмся на странице
             session()->flash('success', 'Оплата прошла успешно! Бронирование подтверждено.');
             $this->step = 7; // Финальный шаг - успех
             
@@ -278,9 +336,9 @@ public function proceedToTimeSelection()
         }
     }
 
-     public function skipPayment()
+    public function skipPayment()
     {
-        session()->flash('info', 'Бронирование создано. Оплатите в течение 2 минут.');
+        session()->flash('info', 'Бронирование создано. Оплатите в течение 30 минут.');
         $this->step = 7; // Тоже переходим на финальный шаг
     }
 
@@ -308,6 +366,11 @@ public function proceedToTimeSelection()
     {
         if ($this->step > 1) {
             $this->step--;
+            
+            // При возврате на шаг 4 - перезагружаем доступность инвентаря
+            if ($this->step === 4) {
+                $this->loadAvailableEquipment();
+            }
         }
     }
 

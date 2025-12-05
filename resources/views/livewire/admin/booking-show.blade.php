@@ -25,7 +25,7 @@
                         <p class="text-sm text-gray-500">Email</p>
                         <p class="font-medium">{{ $booking->getClientEmail() ?? 'Не указан' }}</p>
                     </div>
-                    @if($booking->getClientPhone())
+                    @if(method_exists($booking, 'getClientPhone') && $booking->getClientPhone())
                     <div>
                         <p class="text-sm text-gray-500">Телефон</p>
                         <p class="font-medium">{{ $booking->getClientPhone() }}</p>
@@ -42,7 +42,10 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <p class="font-medium text-lg">🎱 {{ $booking->resource->code ?? 'Стол' }}</p>
-                            <p class="text-sm text-gray-500">{{ $booking->resource->model->name }}</p>
+                            {{-- ✅ ИСПРАВЛЕНО: resource.model → resource.productModel --}}
+                            <p class="text-sm text-gray-500">
+                                {{ $booking->resource->productModel->name ?? 'Unknown' }}
+                            </p>
                             <p class="text-sm text-gray-600 mt-1">
                                 Зона: {{ $booking->resource->zone->name ?? 'N/A' }}
                             </p>
@@ -82,7 +85,9 @@
                         <p class="font-medium">{{ $item->productModel->name }}</p>
                         <p class="text-sm text-gray-500">x{{ $item->qty }}</p>
                     </div>
-                    <p class="font-semibold">{{ $item->getAmountFormatted() }}</p>
+                    <p class="font-semibold">
+                        {{ number_format($item->amount / 100, 0) }} ₽
+                    </p>
                 </div>
                 @endforeach
             </div>

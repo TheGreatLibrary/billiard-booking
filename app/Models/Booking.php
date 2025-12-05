@@ -75,7 +75,7 @@ class Booking extends Model
 
     public function getTotalAmountFormatted(): string
     {
-        return number_format($this->total_amount / 100, 2, ',', ' ') . ' ₽';
+        return number_format($this->total_amount, 2, ',', ' ') . ' ₽';
     }
 
     // Имя клиента (user или guest)

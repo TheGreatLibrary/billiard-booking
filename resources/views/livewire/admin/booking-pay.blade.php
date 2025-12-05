@@ -26,7 +26,7 @@
                             <span class="text-gray-600">Email:</span>
                             <span>{{ $booking->getClientEmail() ?? 'Не указан' }}</span>
                         </div>
-                        @if($booking->getClientPhone())
+                        @if(method_exists($booking, 'getClientPhone') && $booking->getClientPhone())
                         <div class="flex justify-between">
                             <span class="text-gray-600">Телефон:</span>
                             <span>{{ $booking->getClientPhone() }}</span>
@@ -38,7 +38,10 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Стол:</span>
-                            <span>{{ $booking->resource->code }} - {{ $booking->resource->model->name }}</span>
+                            {{-- ✅ ИСПРАВЛЕНО: resource.model → resource.productModel --}}
+                            <span>
+                                {{ $booking->resource->code }} - {{ $booking->resource->productModel->name ?? 'Unknown' }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -83,7 +86,7 @@
                                 </td>
                                 <td class="px-4 py-3">{{ $item->qty }}</td>
                                 <td class="px-4 py-3 text-right font-medium">
-                                    {{ $item->getAmountFormatted() }}
+                                    {{ number_format($item->amount / 100, 0) }} ₽
                                 </td>
                             </tr>
                             @endforeach
@@ -139,7 +142,7 @@
                         <div class="space-y-2">
                             <button type="submit" 
                                     wire:loading.attr="disabled"
-                                    class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition">
+                                    class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
                                 <span wire:loading.remove>✓ Оплатить {{ $booking->getTotalAmountFormatted() }}</span>
                                 <span wire:loading>⏳ Обработка...</span>
                             </button>
