@@ -28,6 +28,7 @@ use App\Livewire\Auth\ConfirmPassword;
 
 // Главная страница
 Route::view('/', 'welcome')->name('home');
+
 // ==================== АУТЕНТИФИКАЦИЯ (Гости) ====================
 Route::middleware('guest')->group(function () {
     Route::get('/register', RegisterForm::class)->name('register');
