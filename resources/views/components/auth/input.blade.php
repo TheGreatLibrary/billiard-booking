@@ -1,35 +1,46 @@
 @props([
-    'name',
-    'label',
+    'name' => null,
+    'label' => '',
     'type' => 'text',
     'placeholder' => '',
     'required' => false,
-    'wireModel' => null,
+    'disabled' => false,
+    'readonly' => false,
+    'wireModel' => null,  // Это строка с именем модели, например "form.email"
+    'autocomplete' => null,
+    'autofocus' => false,
 ])
 
 @php
-    $modelName = $wireModel ?? $name;
+    $inputName = $name ?? str_replace('.', '_', $wireModel);
+    $modelName = $wireModel ?? $inputName;
     $hasError = $errors->has($modelName);
+    
+    // Генерируем wire:model директиву ПРАВИЛЬНО
+    $wireModelDirective = $wireModel ? "wire:model=\"{$wireModel}\"" : '';
 @endphp
 
-<div {{ $attributes->merge(['class' => 'mb-6']) }}>
-    <label for="{{ $name }}" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-        {{ $label }}
-        @if($required)
-            <span class="text-red-500">*</span>
-        @endif
-    </label>
+<div {{ $attributes->merge(['class' => 'mb-4']) }}>
+    @if($label)
+        <label for="{{ $inputName }}" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            {{ $label }}
+            @if($required)
+                <span class="text-red-500">*</span>
+            @endif
+        </label>
+    @endif
     
     <input
         type="{{ $type }}"
-        id="{{ $name }}"
-        name="{{ $name }}"
-        @if($wireModel) wire:model="{{ $wireModel }}" @endif
-        {{-- УБИРАЕМ value="{{ old($name) }}" --}}
+        id="{{ $inputName }}"
+        name="{{ $inputName }}"
+        {!! $wireModelDirective !!}
         placeholder="{{ $placeholder }}"
-        {{ $required ? 'required' : '' }}
-        {{-- Добавляем автозаполнение --}}
-        autocomplete="{{ $type === 'password' ? 'new-password' : 'off' }}"
+        @if($required) required @endif
+        @if($disabled) disabled @endif
+        @if($readonly) readonly @endif
+        @if($autofocus) autofocus @endif
+        autocomplete="{{ $autocomplete ?? ($type === 'password' ? 'new-password' : 'off') }}"
         class="w-full px-4 py-3 rounded-lg border 
                {{ $hasError 
                   ? 'border-red-500 dark:border-red-400 focus:ring-red-500' 

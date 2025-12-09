@@ -49,45 +49,45 @@ class BookingCreate extends Component
     }
 
     /**
- * Быстрый выбор нескольких часов подряд
- */
-public function quickSelect($hours)
-{
-    $this->selectedSlots = [];
-    
-    $availableTimes = array_keys(array_filter($this->availableSlots, fn($slot) => $slot['available']));
-    
-    // Берем первые N доступных слотов
-    $slotsToSelect = array_slice($availableTimes, 0, $hours);
-    
-    foreach ($slotsToSelect as $time) {
-        $this->selectedSlots[] = $time;
+     * Быстрый выбор нескольких часов подряд
+     */
+    public function quickSelect($hours)
+    {
+        $this->selectedSlots = [];
+        
+        $availableTimes = array_keys(array_filter($this->availableSlots, fn($slot) => $slot['available']));
+        
+        // Берем первые N доступных слотов
+        $slotsToSelect = array_slice($availableTimes, 0, $hours);
+        
+        foreach ($slotsToSelect as $time) {
+            $this->selectedSlots[] = $time;
+        }
+        
+        $this->calculateTotal();
     }
-    
-    $this->calculateTotal();
-}
 
-/**
- * Очистить выбранные слоты
- */
-public function clearSlots()
-{
-    $this->selectedSlots = [];
-    $this->calculateTotal();
-}
-
-/**
- * Переход к выбору времени (для кнопки на шаге 2)
- */
-public function proceedToTimeSelection()
-{
-    if (!$this->resource_id) {
-        session()->flash('error', 'Выберите стол');
-        return;
+    /**
+     * Очистить выбранные слоты
+     */
+    public function clearSlots()
+    {
+        $this->selectedSlots = [];
+        $this->calculateTotal();
     }
-    
-    $this->step = 3;
-}
+
+    /**
+     * Переход к выбору времени (для кнопки на шаге 2)
+     */
+    public function proceedToTimeSelection()
+    {
+        if (!$this->resource_id) {
+            session()->flash('error', 'Выберите стол');
+            return;
+        }
+        
+        $this->step = 3;
+    }
 
     private function loadPlaceData()
     {
@@ -147,7 +147,7 @@ public function proceedToTimeSelection()
         $this->step = 4;
     }
 
-    // ШАГ 4: Выбор оборудования
+    // ✅ ШАГ 4: Выбор оборудования (ИСПРАВЛЕНО)
     private function loadAvailableEquipment()
     {
         if (!$this->place_id) return;
@@ -175,6 +175,9 @@ public function proceedToTimeSelection()
             ->filter(fn($eq) => $eq['available_qty'] > 0); // Только с доступным количеством
     }
 
+    /**
+     * ✅ Получить доступное количество инвентаря для выбранных слотов
+     */
     private function getAvailableEquipmentQty(Resource $resource)
     {
         if (empty($this->selectedSlots) || !$this->date) {
@@ -370,9 +373,8 @@ public function proceedToTimeSelection()
             }
         }
     }
-
     public function render()
     {
-        return view('livewire.User.booking-create')->layout('layouts.app');
+        return view('livewire.User.stepper')->layout('layouts.app');
     }
 }

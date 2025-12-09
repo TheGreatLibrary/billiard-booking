@@ -57,26 +57,16 @@
             :wirePayBooking="$wirePayBooking"
             color="green"
         />
-        
-        <!-- Наличные -->
-        <x-booking.payment-method 
-            method="cash"
-            title="💵 Наличными при посещении"
-            description="Оплата в заведении"
-            icon="cash"
-            :wirePayBooking="$wirePayBooking"
-            color="amber"
-        />
     </div>
 
     <!-- Пропустить оплату -->
     <div class="text-center">
-        <button 
+        <x-auth.button 
             wire:click="{{ $wireSkipPayment }}"
-            type="button"
-            class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors hover:underline"
+            variant="ghost"
+            class="!text-gray-600 dark:!text-gray-400 hover:!text-gray-900 dark:hover:!text-white !font-medium !p-0 !bg-transparent hover:!underline !shadow-none hover:!shadow-none"
         >
             Оплатить позже
-        </button>
+        </x-auth.button>
     </div>
 </div>

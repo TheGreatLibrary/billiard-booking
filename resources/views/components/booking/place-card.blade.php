@@ -44,7 +44,7 @@
             
             @if(isset($placeData['price_per_hour']))
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                    💰 от {{ number_format($placeData['price_per_hour'] / 100, 0) }} ₽/час
+                    💰 от {{ number_format($placeData['price_per_hour'], 0) }} ₽/час
                 </span>
             @endif
         </div>

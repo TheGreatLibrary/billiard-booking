@@ -83,7 +83,7 @@
                                 <span class="text-sm text-gray-500 dark:text-gray-400">×{{ $itemData['qty'] ?? 1 }}</span>
                             </div>
                             <span class="font-semibold text-green-600 dark:text-green-400">
-                                {{ number_format((($itemData['price'] ?? 0) * ($itemData['qty'] ?? 1)) / 100, 0) }} ₽
+                                {{ number_format((($itemData['price'] ?? 0) * ($itemData['qty'] ?? 1)), 0) }} ₽
                             </span>
                         </div>
                     @endforeach
@@ -95,7 +95,7 @@
         <div class="flex justify-between items-center pt-4">
             <span class="text-xl font-bold text-gray-900 dark:text-white">ИТОГО К ОПЛАТЕ:</span>
             <span class="text-3xl font-bold text-green-600 dark:text-green-400">
-                {{ number_format($totalAmount / 100, 0) }} ₽
+                {{ number_format($totalAmount, 0) }} ₽
             </span>
         </div>
     </div>
