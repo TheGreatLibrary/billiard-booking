@@ -99,6 +99,7 @@ class BookingCreate extends Component
     public function selectResource($resourceId)
     {
         $this->resource_id = $resourceId;
+        $this->clearSlots();
         $this->loadAvailableSlots();
         $this->step = 3;
     }
