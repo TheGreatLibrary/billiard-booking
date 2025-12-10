@@ -78,7 +78,7 @@
                             </svg>
                         </a>
                     @else
-                        <a href="{{ route('register') }}" 
+                        <a href="{{ route('booking.create') }}" 
                            class="group bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-amber-50 font-semibold px-8 py-4 rounded-xl text-lg transition-all duration-300 hover:scale-105 shadow-lg border border-amber-500/30 flex items-center gap-3">
                             <span>Начать бронирование</span>
                             <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

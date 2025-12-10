@@ -16,6 +16,7 @@ use \App\Livewire\Admin\{AdminDashboard,
 };
 use App\Livewire\UserDashboard;
 use App\Livewire\BookingCreate;
+use App\Livewire\Guest\BookingCreate as GuestBookingCreate;
 use App\Livewire\Profile;
 use App\Livewire\Auth\RegisterForm;
 use App\Livewire\Auth\LoginForm;
@@ -31,6 +32,7 @@ Route::view('/', 'welcome')->name('home');
 
 // ==================== АУТЕНТИФИКАЦИЯ (Гости) ====================
 Route::middleware('guest')->group(function () {
+    Route::get('/booking-guest', GuestBookingCreate::class)->name('booking.create');
     Route::get('/register', RegisterForm::class)->name('register');
     Route::get('/login', LoginForm::class)->name('login');
     Route::get('/forgot-password', ForgotPassword::class)->name('password.request');
@@ -41,7 +43,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', UserDashboard::class)->name('dashboard');
     Route::get('/profile', Profile::class)->name('profile');
-    Route::get('/booking', BookingCreate::class)->name('booking.create');
+    Route::get('/booking', BookingCreate::class)->name('booking.create.auth');
     
     Route::patch('profile', function (Request $request) {
         // ... ваш код

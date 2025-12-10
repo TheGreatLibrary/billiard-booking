@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Guest;
 
 use Livewire\Component;
-use App\Models\{Place, Resource, ProductModel, ProductType};
+use App\Models\{Place, Resource, ProductModel, ProductType, User};
 use App\Services\BookingService;
 use Carbon\Carbon;
 
@@ -390,6 +390,6 @@ class BookingCreate extends Component
     }
     public function render()
     {
-        return view('livewire.User.stepper')->layout('layouts.app');
+        return view('livewire.guest.booking-create')->layout('layouts.guest');
     }
 }

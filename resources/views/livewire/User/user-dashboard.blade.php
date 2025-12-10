@@ -77,7 +77,7 @@
         <x-dashboard.action-card
             title="Новое бронирование"
             description="Забронировать стол на нужное время"
-            :href="route('booking.create')"
+            :href="route('booking.create.auth')"
             color="blue"
             :icon="$plusIcon"
         />

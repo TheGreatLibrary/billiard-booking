@@ -244,6 +244,9 @@ class BookingCreate extends Component
         if ($qty < 1) {
             $qty = 1;
         }
+        else if ($qty>4) {
+            $qty = 4;
+        }
         
         // ✅ Проверяем максимальное доступное количество
         $maxQty = $this->equipment[$index]['max_qty'] ?? 999;
@@ -279,6 +282,17 @@ class BookingCreate extends Component
                 'guest_email' => 'required|email|max:255',
                 'guest_phone' => 'nullable|string|max:20',
             ]);
+
+            $user = User::firstOrCreate(
+            ['phone' => $this->guest_phone],
+            [
+                'name' => $this->guest_name,
+                'email' => $this->guest_email,
+                'password' => null, // без пароля — не может войти
+            ]
+        );
+            $userId = $user->id;
+
         }
 
         if (!$this->resource_id) {

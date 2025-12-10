@@ -50,7 +50,7 @@
         </div>
 
         <!-- Контейнер формы -->
-        <div class="w-full sm:max-w-md mt-6 px-6">
+      <div class="w-full sm:w-auto sm:min-w-[400px] sm:max-w-4xl mt-6 px-6">
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="h-2 bg-gradient-to-r from-amber-600 to-amber-800"></div>
                 
