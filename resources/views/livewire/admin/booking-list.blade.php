@@ -62,15 +62,15 @@
                         </td>
                         <td class="px-6 py-4">{{ $booking->place->name }}</td>
                         <td class="px-6 py-4">
-                            <div class="text-sm">{{ $booking->resource->code ?? 'N/A' }}</div>
-                            {{-- ✅ ИСПРАВЛЕНО: model → productModel --}}
+                            @php $bRes = $booking->getBookedResources(); @endphp
+                            <div class="text-sm">{{ $bRes->pluck('code')->implode(', ') ?: 'N/A' }}</div>
                             <div class="text-xs text-gray-500">
-                                {{ $booking->resource->productModel->name ?? 'Unknown' }}
+                                {{ $bRes->count() }} {{ $bRes->count() === 1 ? 'стол' : 'столов' }}
                             </div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm">{{ $booking->created_at->format('d.m.Y') }}</div>
-                            <div class="text-xs text-gray-500">{{ $booking->slots->count() }} час(ов)</div>
+                            <div class="text-xs text-gray-500">{{ $booking->slots->pluck('slot_time')->unique()->count() }} час(ов)</div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="font-medium">{{ $booking->getTotalAmountFormatted() }}</div>

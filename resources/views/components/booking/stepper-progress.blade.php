@@ -2,8 +2,8 @@
     'current' => 1,
     'steps' => [
         1 => ['label' => 'Место', 'icon' => 'location'],
-        2 => ['label' => 'Стол', 'icon' => 'table'],
-        3 => ['label' => 'Время', 'icon' => 'clock'],
+        2 => ['label' => 'Время', 'icon' => 'clock'],
+        3 => ['label' => 'Столы', 'icon' => 'table'],
         4 => ['label' => 'Оборудование', 'icon' => 'equipment'],
         5 => ['label' => 'Данные', 'icon' => 'user'],
         6 => ['label' => 'Оплата', 'icon' => 'payment'],

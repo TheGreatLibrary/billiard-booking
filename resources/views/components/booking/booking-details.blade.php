@@ -51,29 +51,33 @@
             </div>
         @endif
         
-        <!-- Стол -->
-        @if($booking?->resource?->code ?? false)
+        <!-- Столы -->
+        @php
+            $bookedResources = $booking ? $booking->getBookedResources() : collect();
+            $uniqueSlotTimes = $booking?->slots?->pluck('slot_time')->unique()->sort()->values() ?? collect();
+            $slotDate = $booking?->slots?->first()?->slot_date ?? 'N/A';
+        @endphp
+
+        @if($bookedResources->isNotEmpty())
             <div class="flex justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Стол:</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ $booking->resource->code }}</span>
+                <span class="text-gray-600 dark:text-gray-300">Столы:</span>
+                <span class="font-semibold text-gray-900 dark:text-white">
+                    {{ $bookedResources->pluck('code')->implode(', ') }}
+                </span>
             </div>
         @endif
         
         <!-- Дата и время -->
-        @if($booking?->slots?->isNotEmpty() ?? false)
+        @if($uniqueSlotTimes->isNotEmpty())
             <div class="flex justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Дата:</span>
-                <span class="font-semibold text-gray-900 dark:text-white">
-                    {{ $booking->slots->first()->slot_date ?? 'N/A' }}
-                </span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ $slotDate }}</span>
             </div>
             
             <div class="flex justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Время:</span>
                 <span class="font-semibold text-gray-900 dark:text-white">
-                    @foreach($booking->slots as $slot)
-                        {{ $slot->slot_time }}@if(!$loop->last), @endif
-                    @endforeach
+                    {{ $uniqueSlotTimes->implode(', ') }}
                 </span>
             </div>
         @endif

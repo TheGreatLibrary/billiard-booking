@@ -60,5 +60,7 @@
             console.log('Админ панель загружена');
         });
     </script>
+<script src="{{ asset('js/pay-gate.js') }}"></script>
+<style>@keyframes pgspin{to{transform:rotate(360deg)}}</style>
 </body>
 </html>

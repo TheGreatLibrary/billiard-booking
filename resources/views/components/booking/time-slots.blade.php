@@ -2,6 +2,7 @@
     'availableSlots' => [],
     'selectedSlots' => [],
     'wireToggleSlot' => 'toggleSlot',
+    'showPricePrefix' => false,
 ])
 
 @php
@@ -48,7 +49,7 @@
                         <div class="font-bold text-2xl mb-2">{{ $time }}</div>
                         @if($isAvailable)
                             <div class="text-lg font-semibold {{ $isSelected ? 'text-blue-100' : 'text-gray-600 dark:text-gray-300' }}">
-                                {{ number_format($price, 0) }} ₽
+                                {{ $showPricePrefix ? 'от ' : '' }}{{ number_format($price, 0) }} ₽
                             </div>
                         @else
                             <div class="text-sm font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">

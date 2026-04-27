@@ -23,27 +23,35 @@
             </div>
         @endif
         
-        @if($booking?->resource?->code ?? false)
-            <div class="flex justify-between items-center py-2">
-                <span class="text-gray-600 dark:text-gray-300">Стол:</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ $booking->resource->code }}</span>
+        @php
+            $bookedResources = $booking ? $booking->getBookedResources() : collect();
+            $uniqueSlotTimes = $booking?->slots?->pluck('slot_time')->unique()->sort()->values() ?? collect();
+            $slotDate = $booking?->slots?->first()?->slot_date ?? 'N/A';
+        @endphp
+
+        @if($bookedResources->isNotEmpty())
+            <div class="py-2">
+                <span class="text-gray-600 dark:text-gray-300">Столы ({{ $bookedResources->count() }}):</span>
+                <div class="flex flex-wrap gap-2 mt-1">
+                    @foreach($bookedResources as $res)
+                        <span class="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-full text-sm font-medium">
+                            {{ $res->code }}
+                        </span>
+                    @endforeach
+                </div>
             </div>
         @endif
         
-        @if($booking?->slots?->isNotEmpty() ?? false)
+        @if($uniqueSlotTimes->isNotEmpty())
             <div class="flex justify-between items-center py-2">
                 <span class="text-gray-600 dark:text-gray-300">Дата:</span>
-                <span class="font-semibold text-gray-900 dark:text-white">
-                    {{ $booking->slots->first()->slot_date ?? 'N/A' }}
-                </span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ $slotDate }}</span>
             </div>
             
             <div class="flex justify-between items-center py-2">
                 <span class="text-gray-600 dark:text-gray-300">Время:</span>
                 <span class="font-semibold text-gray-900 dark:text-white">
-                    @foreach($booking->slots as $slot)
-                        {{ $slot->slot_time }}@if(!$loop->last), @endif
-                    @endforeach
+                    {{ $uniqueSlotTimes->implode(', ') }}
                 </span>
             </div>
         @endif

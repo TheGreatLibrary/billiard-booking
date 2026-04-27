@@ -42,9 +42,10 @@
                         </svg>
                     </div>
                     <div>
-                        <span class="text-gray-600 dark:text-gray-400">Стол:</span>
+                        <span class="text-gray-600 dark:text-gray-400">Столы:</span>
                         <span class="font-medium text-gray-900 dark:text-white ml-2">
-                            {{ $booking->resource->code ?? 'N/A' }} - {{ $booking->resource->model->name ?? 'N/A' }}
+                            @php $bookedRes = $booking->getBookedResources(); @endphp
+                            {{ $bookedRes->pluck('code')->implode(', ') ?: 'N/A' }}
                         </span>
                     </div>
                 </div>
@@ -87,25 +88,28 @@
                         </svg>
                     </div>
                     <div class="flex-1">
+                        @php
+                            $uniqueTimes = $booking->slots?->pluck('slot_time')->unique()->sort()->values() ?? collect();
+                        @endphp
                         <div class="flex items-center justify-between">
                             <span class="text-gray-600 dark:text-gray-400">Время:</span>
                             <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                                {{ $booking->slots?->count() ?? 0 }} час(ов)
+                                {{ $uniqueTimes->count() }} час(ов)
                             </span>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-2">
-                            @forelse($booking->slots?->take(5) ?? [] as $slot)
+                            @forelse($uniqueTimes->take(5) as $time)
                                 <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-lg text-sm font-medium">
-                                    {{ $slot->slot_datetime ? \Carbon\Carbon::parse($slot->slot_datetime)->format('d.m H:i') : 'N/A' }}
+                                    {{ $booking->slots->first()?->slot_date ? \Carbon\Carbon::parse($booking->slots->first()->slot_date . ' ' . $time)->format('d.m H:i') : $time }}
                                 </span>
                             @empty
                                 <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-sm">
                                     Нет слотов
                                 </span>
                             @endforelse
-                            @if(($booking->slots?->count() ?? 0) > 5)
+                            @if($uniqueTimes->count() > 5)
                                 <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-sm">
-                                    +{{ $booking->slots->count() - 5 }}
+                                    +{{ $uniqueTimes->count() - 5 }}
                                 </span>
                             @endif
                         </div>

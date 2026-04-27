@@ -7,7 +7,6 @@
 ])
 
 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-gray-900/40 p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
-    <!-- Заголовок с кнопкой назад -->
     <x-booking.step-header 
         title="Выберите стол"
         subtitle="Выберите подходящий стол в выбранном заведении"
@@ -15,25 +14,20 @@
         :wireGoBack="$wireGoBack"
     />
 
-    <!-- Информационная панель -->
     <x-booking.info-panel 
         :placeData="$placeData"
         :resourceId="$resource_id"
     />
 
-    <!-- Карта зала -->
+    {{-- Новая карта --}}
     <x-booking.table-map 
         :placeData="$placeData"
         :resourceId="$resource_id"
         :wireSelectResource="$wireSelectResource"
     />
 
-    <!-- Легенда -->
-    <x-booking.legend 
-        :zones="$placeData['zones'] ?? []"
-    />
+    <x-booking.legend :zones="$placeData['zones'] ?? []" />
 
-    <!-- Кнопка продолжить -->
     <div class="flex justify-end mt-8">
         <x-auth.button 
             wire:click="{{ $wireProceedToTimeSelection }}"

@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('bookings:cleanup-expired')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('bookings:send-reminders')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

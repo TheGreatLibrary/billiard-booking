@@ -23,12 +23,14 @@ class Booking extends Model
         'guest_email',
         'guest_phone',
         'expires_at',
+        'reminder_sent_at',
         'created_at',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
         'expires_at' => 'datetime',
+        'reminder_sent_at' => 'datetime',
         'created_at' => 'datetime',
     ];
 
@@ -45,6 +47,38 @@ class Booking extends Model
     public function resource(): BelongsTo
     {
         return $this->belongsTo(Resource::class);
+    }
+
+    /**
+     * Все ресурсы (столы) бронирования через слоты
+     */
+    public function resources()
+    {
+        return $this->hasManyThrough(
+            Resource::class,
+            BookingSlot::class,
+            'booking_id',  // FK на booking_slots
+            'id',          // FK на resources
+            'id',          // LK на bookings
+            'resource_id'  // LK на booking_slots
+        );
+    }
+
+    /**
+     * Уникальные resource_id из слотов
+     */
+    public function getResourceIds(): array
+    {
+        return $this->slots()->distinct()->pluck('resource_id')->filter()->values()->toArray();
+    }
+
+    /**
+     * Получить все уникальные ресурсы бронирования
+     */
+    public function getBookedResources()
+    {
+        $ids = $this->getResourceIds();
+        return Resource::with(['productModel', 'zone'])->whereIn('id', $ids)->get();
     }
 
     public function slots(): HasMany
@@ -111,6 +145,7 @@ class BookingSlot extends Model
 
     protected $fillable = [
         'booking_id',
+        'resource_id',
         'slot_date',
         'slot_time',
         'slot_datetime',
@@ -123,6 +158,11 @@ class BookingSlot extends Model
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function resource(): BelongsTo
+    {
+        return $this->belongsTo(Resource::class);
     }
 }
 

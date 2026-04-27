@@ -34,42 +34,50 @@
                 </div>
             </div>
 
-            <!-- Забронированный стол -->
+            <!-- Забронированные столы -->
             <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-lg font-semibold mb-4">Забронированный стол</h2>
+                <h2 class="text-lg font-semibold mb-4">Забронированные столы</h2>
                 
-                <div class="border-b pb-4 mb-4">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="font-medium text-lg">🎱 {{ $booking->resource->code ?? 'Стол' }}</p>
-                            {{-- ✅ ИСПРАВЛЕНО: resource.model → resource.productModel --}}
-                            <p class="text-sm text-gray-500">
-                                {{ $booking->resource->productModel->name ?? 'Unknown' }}
-                            </p>
-                            <p class="text-sm text-gray-600 mt-1">
-                                Зона: {{ $booking->resource->zone->name ?? 'N/A' }}
-                            </p>
+                @php
+                    $bookedResources = $booking->getBookedResources();
+                    $uniqueSlotTimes = $booking->slots->pluck('slot_time')->unique()->sort()->values();
+                    $slotDate = $booking->slots->first()?->slot_date ?? 'N/A';
+                @endphp
+
+                <!-- Столы -->
+                <div class="space-y-3 mb-4">
+                    @foreach($bookedResources as $res)
+                        <div class="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="font-medium text-lg">🎱 {{ $res->code }}</p>
+                                <p class="text-sm text-gray-500">{{ $res->productModel->name ?? 'Unknown' }}</p>
+                                <p class="text-sm text-gray-600">Зона: {{ $res->zone->name ?? 'N/A' }}</p>
+                            </div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-2xl font-bold text-green-600">
-                                {{ $booking->getTotalAmountFormatted() }}
-                            </p>
-                        </div>
+                    @endforeach
+                </div>
+
+                <div class="border-t pt-4 mb-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Итого:</span>
+                        <p class="text-2xl font-bold text-green-600">
+                            {{ $booking->getTotalAmountFormatted() }}
+                        </p>
                     </div>
                 </div>
 
-                <!-- Временные слоты -->
+                <!-- Временные слоты (уникальные) -->
                 <div class="mt-4">
-                    <p class="text-sm font-medium mb-2">Забронированное время:</p>
+                    <p class="text-sm font-medium mb-2">Забронированное время ({{ $slotDate }}):</p>
                     <div class="flex flex-wrap gap-2">
-                        @foreach($booking->slots as $slot)
+                        @foreach($uniqueSlotTimes as $time)
                             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                {{ \Carbon\Carbon::parse($slot->slot_datetime)->format('d.m.Y H:i') }}
+                                {{ $time }}
                             </span>
                         @endforeach
                     </div>
                     <p class="text-sm text-gray-500 mt-2">
-                        Всего часов: {{ $booking->slots->count() }}
+                        {{ $uniqueSlotTimes->count() }} ч. × {{ $bookedResources->count() }} {{ $bookedResources->count() === 1 ? 'стол' : ($bookedResources->count() < 5 ? 'стола' : 'столов') }}
                     </p>
                 </div>
             </div>

@@ -1,7 +1,4 @@
 import './bootstrap';
-import 'chart.js/auto';
-import Alpine from 'alpinejs';
+import Chart from 'chart.js/auto';
 
-window.Chart = require('chart.js/auto').default;
-window.Alpine = Alpine;
-Alpine.start();
+window.Chart = Chart;

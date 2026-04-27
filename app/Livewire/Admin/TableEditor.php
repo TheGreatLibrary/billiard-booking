@@ -76,10 +76,9 @@ class TableEditor extends Component
     {
         if (!$this->place) return;
         
-        // ✅ ИСПРАВЛЕНИЕ: Получаем только столы (type = 'table')
         $allTables = Resource::where('place_id', $this->place->id)
-            ->where('type', 'table') // ✅ Только столы!
-            ->with(['productModel', 'zone', 'state']) // ✅ Правильное имя связи
+            ->where('type', 'table')
+            ->with(['productModel', 'zone', 'state'])
             ->get();
         
         if ($allTables->isEmpty()) {
@@ -89,7 +88,6 @@ class TableEditor extends Component
             return;
         }
         
-        // Разделяем на размещенные и доступные
         $this->tablesOnGrid = $allTables
             ->filter(fn($t) => !is_null($t->grid_x) && !is_null($t->grid_y))
             ->map(fn($t) => $this->mapTableData($t))
@@ -101,6 +99,18 @@ class TableEditor extends Component
             ->map(fn($t) => $this->mapTableData($t))
             ->values()
             ->toArray();
+        
+        $this->dispatchMapUpdate();
+    }
+
+    private function dispatchMapUpdate()
+    {
+        $this->dispatch('te:update', [
+            'gw' => $this->gridWidth,
+            'gh' => $this->gridHeight,
+            'zones' => $this->zones,
+            'tables' => $this->tablesOnGrid,
+        ]);
     }
 
     private function mapTableData($table)
@@ -228,11 +238,7 @@ class TableEditor extends Component
         
         $this->loadTables();
         
-        // Получаем название новой зоны для сообщения
-        $newZone = collect($this->zones)->firstWhere('id', $zoneId);
-        $zoneName = $newZone ? $newZone['name'] : 'неизвестная';
-        
-        session()->flash('success', "Стол перемещен в зону \"{$zoneName}\" на позицию ({$gridX}, {$gridY})");
+        // Без flash-сообщения при перемещении — чтобы страница не дёргалась
     }
 
     /**

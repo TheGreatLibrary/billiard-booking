@@ -37,10 +37,10 @@
                             <span>{{ $booking->place->name }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Стол:</span>
-                            {{-- ✅ ИСПРАВЛЕНО: resource.model → resource.productModel --}}
+                            <span class="text-gray-600">Столы:</span>
                             <span>
-                                {{ $booking->resource->code }} - {{ $booking->resource->productModel->name ?? 'Unknown' }}
+                                @php $payRes = $booking->getBookedResources(); @endphp
+                                {{ $payRes->pluck('code')->implode(', ') }}
                             </span>
                         </div>
                     </div>
@@ -50,15 +50,16 @@
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 class="text-lg font-semibold mb-4">🕐 Забронированное время</h2>
                     
+                    @php $uniquePayTimes = $booking->slots->pluck('slot_time')->unique()->sort()->values(); @endphp
                     <div class="flex flex-wrap gap-2">
-                        @foreach($booking->slots as $slot)
+                        @foreach($uniquePayTimes as $time)
                             <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                {{ \Carbon\Carbon::parse($slot->slot_datetime)->format('d.m.Y H:i') }}
+                                {{ $booking->slots->first()?->slot_date }} {{ $time }}
                             </span>
                         @endforeach
                     </div>
                     <p class="text-sm text-gray-500 mt-3">
-                        Всего часов: {{ $booking->slots->count() }}
+                        {{ $uniquePayTimes->count() }} час(ов) × {{ $payRes->count() }} столов
                     </p>
                 </div>
 

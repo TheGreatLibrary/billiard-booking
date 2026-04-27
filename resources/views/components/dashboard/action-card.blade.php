@@ -1,7 +1,7 @@
 @props([
     'title',
     'description',
-    'href',
+    'href' => '#',
     'color' => 'blue',
     'icon' => null,
 ])
