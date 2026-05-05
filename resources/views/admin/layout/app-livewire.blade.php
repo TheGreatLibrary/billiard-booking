@@ -8,6 +8,7 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    @stack('styles')
 </head>
 <body class="bg-gray-100">
     <div class="flex min-h-screen">
@@ -60,6 +61,7 @@
             console.log('Админ панель загружена');
         });
     </script>
+@stack('scripts')
 <script src="{{ asset('js/pay-gate.js') }}"></script>
 <style>@keyframes pgspin{to{transform:rotate(360deg)}}</style>
 </body>

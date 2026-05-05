@@ -17,19 +17,26 @@
     $aspectRatio = ($gridHeight / $gridWidth) * 100;
 @endphp
 
+@php
+    $hallImage = $placeData['place']['hall_image'] ?? null;
+    $hallImageUrl = $hallImage ? asset('storage/' . $hallImage) : null;
+@endphp
+
 <div class="hall-map-wrapper mb-8">
     <div class="relative rounded-2xl overflow-hidden border border-gray-200/60 dark:border-gray-700/60"
-         style="background: 
-            radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
-            radial-gradient(circle at 80% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
-            var(--hall-bg, #f8fafc);">
+         style="background: {{ $hallImageUrl ? "url('{$hallImageUrl}') center/cover no-repeat" : 'var(--hall-bg, #f8fafc)' }};">
 
-        {{-- Тонкая сетка пола --}}
-        <div class="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]" 
-             style="background-image: 
-                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-                background-size: {{ $cellSize }}% {{ 100 / $gridHeight }}%;"></div>
+        @if(!$hallImageUrl)
+            {{-- Тонкая сетка пола (только если нет изображения) --}}
+            <div class="absolute inset-0 opacity-[0.04] dark:opacity-[0.06]" 
+                 style="background-image: 
+                    linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+                    background-size: {{ $cellSize }}% {{ 100 / $gridHeight }}%;"></div>
+        @else
+            {{-- Полупрозрачный overlay для читабельности поверх фото --}}
+            <div class="absolute inset-0 bg-black/20 dark:bg-black/40"></div>
+        @endif
 
         {{-- Контейнер с пропорциями --}}
         <div class="relative w-full" style="padding-bottom: {{ $aspectRatio }}%;">

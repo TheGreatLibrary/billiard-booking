@@ -141,6 +141,7 @@
         overlay: null,
         dragging: null,
         _pendingRender: false,
+        hallImg: '',
         _evBound: false,
 
         boot: function() {
@@ -159,7 +160,10 @@
             var pct = (this.gh / this.gw * 100);
             var cw = 100/this.gw, ch = 100/this.gh;
             var h = '';
-            h += '<div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;background:#f8fafc">';
+            var hallImg = this.hallImg || '{{ $hallImage ? asset("storage/" . $hallImage) : "" }}';
+            var bgStyle = hallImg ? 'background:url('+hallImg+') center/cover no-repeat' : 'background:#f8fafc';
+            h += '<div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;' + bgStyle + '">';
+            if (hallImg) { h += '<div style="position:absolute;inset:0;background:rgba(0,0,0,.2)"></div>'; }
             h += '<div style="position:absolute;inset:0;pointer-events:none;opacity:0.08;background-image:linear-gradient(rgba(0,0,0,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.2) 1px,transparent 1px);background-size:'+cw+'% '+ch+'%"></div>';
             h += '<div style="position:relative;width:100%;padding-bottom:'+pct+'%">';
 
@@ -344,6 +348,7 @@
             Livewire.on('te:update', function(data) {
                 var d=data[0];
                 self.gw=d.gw; self.gh=d.gh; self.zones=d.zones; self.tables=d.tables;
+                self.hallImg = d.hallImage || '';
                 if(self.dragging){self._pendingRender=true;return;}
                 setTimeout(function(){if(self.findRoot())self.render();},30);
             });

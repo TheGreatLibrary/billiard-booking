@@ -24,7 +24,7 @@
     ];
 @endphp
 
-<div {{ $attributes->merge(['class' => 'mb-8']) }}>
+<div {{ $attributes->merge(['class' => 'mb-8 relative z-0']) }}>
     <div class="flex items-center justify-between">
         @foreach($steps as $num => $step)
             @php

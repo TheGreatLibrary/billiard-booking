@@ -151,6 +151,7 @@
 <script>
 (function(){
     var ZM = {
+        hallImg: '',
         gw: {{ $gridWidth ?? 20 }},
         gh: {{ $gridHeight ?? 10 }},
         zones: {!! json_encode($zones ?? []) !!},
@@ -182,7 +183,12 @@
             var pct = (this.gh / this.gw * 100);
             var gridBg = 'background-image:linear-gradient(rgba(0,0,0,.2) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.2) 1px,transparent 1px);background-size:' + (100/this.gw) + '% ' + (100/this.gh) + '%';
 
-            var html = '<div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;background:#f8fafc">';
+            var hallImg = this.hallImg || '{{ $hallImage ? asset("storage/" . $hallImage) : "" }}';
+            var bgStyle = hallImg ? 'background:url('+hallImg+') center/cover no-repeat' : 'background:#f8fafc';
+            var html = '<div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;' + bgStyle + '">';
+            if (hallImg) {
+                html += '<div style="position:absolute;inset:0;background:rgba(0,0,0,.2)"></div>';
+            }
             html += '<div style="position:absolute;inset:0;pointer-events:none;opacity:0.08;' + gridBg + '"></div>';
             html += '<div style="position:relative;width:100%;padding-bottom:' + pct + '%">';
 
@@ -285,6 +291,7 @@
                 self.gw = d.gw;
                 self.gh = d.gh;
                 self.zones = d.zones;
+                self.hallImg = d.hallImage || '';
                 self.cells = [];
                 self.editId = null;
                 // DOM мог появиться после Livewire рендера — ищем root заново

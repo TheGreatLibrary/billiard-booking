@@ -13,6 +13,7 @@ class ZoneEditor extends Component
     public $zones = [];
     public $gridWidth = 20;
     public $gridHeight = 10;
+    public $hallImage = null;
     
     public $editingZoneId = null;
     public $zoneName = '';
@@ -44,6 +45,7 @@ class ZoneEditor extends Component
         $this->place = Place::findOrFail($value);
         $this->gridWidth = $this->place->grid_width ?? 20;
         $this->gridHeight = $this->place->grid_height ?? 10;
+        $this->hallImage = $this->place->hall_image;
         $this->loadZones();
         $this->resetForm();
 
@@ -51,6 +53,7 @@ class ZoneEditor extends Component
             'gw' => $this->gridWidth,
             'gh' => $this->gridHeight,
             'zones' => $this->zones,
+            'hallImage' => $this->hallImage ? asset('storage/' . $this->hallImage) : '',
         ]);
     }
 

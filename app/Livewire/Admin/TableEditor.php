@@ -20,6 +20,7 @@ class TableEditor extends Component
     // Параметры сетки
     public $gridWidth = 20;
     public $gridHeight = 10;
+    public $hallImage = null;
     
     // Выбранный стол для размещения
     public $selectedTableId = null;
@@ -47,6 +48,7 @@ class TableEditor extends Component
         $this->place = Place::findOrFail($value);
         $this->gridWidth = $this->place->grid_width ?? 20;
         $this->gridHeight = $this->place->grid_height ?? 10;
+        $this->hallImage = $this->place->hall_image;
         
         $this->loadZones();
         $this->loadTables();
@@ -84,7 +86,7 @@ class TableEditor extends Component
         if ($allTables->isEmpty()) {
             $this->tablesOnGrid = [];
             $this->tablesAvailable = [];
-            session()->flash('warning', 'В этом заведении нет столов. Создайте столы в разделе "Ресурсы".');
+            $this->dispatch('te:toast', ['type' => 'warning', 'msg' => 'В этом заведении нет столов. Создайте столы в разделе "Ресурсы".']);
             return;
         }
         
@@ -110,6 +112,7 @@ class TableEditor extends Component
             'gh' => $this->gridHeight,
             'zones' => $this->zones,
             'tables' => $this->tablesOnGrid,
+            'hallImage' => $this->hallImage ? asset('storage/' . $this->hallImage) : '',
         ]);
     }
 
@@ -118,7 +121,7 @@ class TableEditor extends Component
         return [
             'id' => $table->id,
             'code' => $table->code ?? 'N/A',
-            'model_name' => $table->productModel->name ?? 'Unknown', // ✅ productModel
+            'model_name' => $table->productModel->name ?? 'Unknown',
             'zone_id' => $table->zone_id,
             'zone_name' => $table->zone->name ?? 'Не назначена',
             'zone_color' => $table->zone->color ?? '#CCCCCC',
@@ -146,35 +149,35 @@ class TableEditor extends Component
     public function placeTable($gridX, $gridY)
     {
         if (!$this->selectedTableId) {
-            session()->flash('error', 'Сначала выберите стол из списка');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Сначала выберите стол из списка']);
             return;
         }
         
         $table = collect($this->tablesAvailable)->firstWhere('id', $this->selectedTableId);
         
         if (!$table) {
-            session()->flash('error', 'Стол не найден');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Стол не найден']);
             return;
         }
         
         // Проверка границ
         if (!$this->checkBounds($gridX, $gridY, $table['grid_width'], $table['grid_height'])) {
-            session()->flash('error', 'Стол не помещается в эту позицию');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Стол не помещается в эту позицию']);
             return;
         }
         
         // Проверка коллизий
         if ($this->checkCollision(null, $gridX, $gridY, $table['grid_width'], $table['grid_height'], $table['rotation'])) {
-            session()->flash('error', 'Место занято другим столом');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Место занято другим столом']);
             return;
         }
         
-        // ✅ Определяем зону ОБЯЗАТЕЛЬНО
+        // Определяем зону
         $zoneId = $this->detectZone($gridX, $gridY, $table['grid_width'], $table['grid_height']);
         
-        // ✅ Если зона не найдена - ЗАПРЕЩАЕМ размещение!
+        // Стол должен быть в зоне
         if (!$zoneId) {
-            session()->flash('error', 'Невозможно разместить стол вне зоны. Сначала создайте зону в этой области.');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Невозможно разместить стол вне зоны. Сначала создайте зону в этой области.']);
             return;
         }
         
@@ -189,7 +192,7 @@ class TableEditor extends Component
         $this->selectedTableId = null;
         
         $zoneName = collect($this->zones)->firstWhere('id', $zoneId)['name'] ?? 'неизвестная';
-        session()->flash('success', "Стол размещен в зоне \"{$zoneName}\" на позиции ({$gridX}, {$gridY})");
+        $this->dispatch('te:toast', ['type' => 'success', 'msg' => "Стол размещен в зоне \"{$zoneName}\" на позиции ({$gridX}, {$gridY})"]);
     }
 
     /**
@@ -200,31 +203,31 @@ class TableEditor extends Component
         $table = collect($this->tablesOnGrid)->firstWhere('id', $tableId);
         
         if (!$table) {
-            session()->flash('error', 'Стол не найден');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Стол не найден']);
             $this->loadTables();
             return;
         }
         
         // Проверка границ
         if (!$this->checkBounds($gridX, $gridY, $table['grid_width'], $table['grid_height'], $table['rotation'])) {
-            session()->flash('error', 'Стол выходит за границы');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Стол выходит за границы']);
             $this->loadTables();
             return;
         }
         
         // Проверка коллизий (исключая сам стол)
         if ($this->checkCollision($tableId, $gridX, $gridY, $table['grid_width'], $table['grid_height'], $table['rotation'])) {
-            session()->flash('error', 'Место занято');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Место занято']);
             $this->loadTables();
             return;
         }
         
-        // ✅ Определяем зону ОБЯЗАТЕЛЬНО
+        // Определяем зону
         $zoneId = $this->detectZone($gridX, $gridY, $table['grid_width'], $table['grid_height'], $table['rotation']);
         
-        // ✅ Если зона не найдена - ЗАПРЕЩАЕМ перемещение!
+        // Стол должен быть в зоне
         if (!$zoneId) {
-            session()->flash('error', 'Невозможно переместить стол вне зоны');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Невозможно переместить стол вне зоны']);
             $this->loadTables();
             return;
         }
@@ -249,7 +252,7 @@ class TableEditor extends Component
         $table = collect($this->tablesOnGrid)->firstWhere('id', $tableId);
         
         if (!$table) {
-            session()->flash('error', 'Стол не найден');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'Стол не найден']);
             return;
         }
         
@@ -262,21 +265,21 @@ class TableEditor extends Component
         
         // Проверяем, что после поворота стол помещается
         if (!$this->checkBounds($table['grid_x'], $table['grid_y'], $newWidth, $newHeight, $newRotation)) {
-            session()->flash('error', 'После поворота стол выходит за границы');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'После поворота стол выходит за границы']);
             return;
         }
         
         // Проверяем коллизии с новыми размерами
         if ($this->checkCollision($tableId, $table['grid_x'], $table['grid_y'], $newWidth, $newHeight, $newRotation)) {
-            session()->flash('error', 'После поворота стол пересекается с другим столом');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'После поворота стол пересекается с другим столом']);
             return;
         }
         
-        // ✅ Проверяем, что после поворота стол все еще в зоне
+        // Проверяем что стол остаётся в зоне
         $zoneId = $this->detectZone($table['grid_x'], $table['grid_y'], $newWidth, $newHeight, $newRotation);
         
         if (!$zoneId) {
-            session()->flash('error', 'После поворота стол выходит за пределы зоны');
+            $this->dispatch('te:toast', ['type' => 'error', 'msg' => 'После поворота стол выходит за пределы зоны']);
             return;
         }
         
@@ -288,7 +291,7 @@ class TableEditor extends Component
         ]);
         
         $this->loadTables();
-        session()->flash('success', 'Стол повернут на 90°');
+        $this->dispatch('te:toast', ['type' => 'success', 'msg' => 'Стол повернут на 90°']);
     }
 
     /**
@@ -304,7 +307,7 @@ class TableEditor extends Component
         
         $this->loadTables();
         $this->selectedGridTableId = null;
-        session()->flash('success', 'Стол убран с карты и отвязан от зоны');
+        $this->dispatch('te:toast', ['type' => 'success', 'msg' => 'Стол убран с карты и отвязан от зоны']);
     }
 
     /**
@@ -365,7 +368,7 @@ class TableEditor extends Component
     }
 
     /**
-     * ✅ ИСПРАВЛЕННЫЙ метод определения зоны
+     * Определение зоны по координатам стола
      * Проверяет ВСЕ ячейки стола
      */
     private function detectZone($x, $y, $width, $height, $rotation = 0)
@@ -396,7 +399,7 @@ class TableEditor extends Component
             $matchCount = 0;
             
             foreach ($tableCells as $cell) {
-                // ✅ ИСПРАВЛЕНИЕ: Правильная проверка наличия координаты в зоне
+                // Проверка координаты в зоне
                 $found = false;
                 foreach ($zone['coordinates'] as $coord) {
                     // Сравниваем как числа, не как массивы
@@ -418,7 +421,7 @@ class TableEditor extends Component
             }
         }
         
-        // ✅ ВАЖНО: Если хотя бы одна ячейка стола вне всех зон - возвращаем null
+        // Все ячейки стола должны быть в зоне
         $totalCells = count($tableCells);
         $totalMatched = array_sum($zoneMatches);
         

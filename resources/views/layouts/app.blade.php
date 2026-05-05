@@ -23,6 +23,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    @stack('styles')
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300 theme-loading"
       x-bind:class="isDark ? 'theme-loaded' : 'theme-loaded'"
@@ -214,6 +215,7 @@
             }, 1000);
         });
     </script>
+@stack('scripts')
 <script src="{{ asset('js/pay-gate.js') }}"></script>
 <style>@keyframes pgspin{to{transform:rotate(360deg)}}</style>
 </body>

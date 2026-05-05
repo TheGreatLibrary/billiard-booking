@@ -137,7 +137,7 @@
             <x-dashboard.empty-state
                 title="У вас пока нет бронирований"
                 description="Создайте первое бронирование, чтобы начать играть!"
-                :href="route('booking.create')"
+                :href="route('booking.create.auth')"
                 buttonText="Создать бронирование"
             />
         @endif
