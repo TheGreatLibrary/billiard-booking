@@ -203,22 +203,4 @@
         </div>
     </div>
 
-    <!-- Быстрые действия -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a href="{{ route('admin.bookings.create') }}" 
-           class="bg-blue-500 hover:bg-blue-600 text-white p-6 rounded-lg shadow-md text-center transition">
-            <div class="text-3xl mb-2">➕</div>
-            <div class="font-semibold text-lg">Новое бронирование</div>
-        </a>
-        <a href="{{ route('admin.bookings.index') }}" 
-           class="bg-purple-500 hover:bg-purple-600 text-gray-700 p-6 rounded-lg shadow-md text-center transition">
-            <div class="text-3xl mb-2">📅</div>
-            <div class="font-semibold text-lg">Все бронирования</div>
-        </a>
-        <a href="{{ route('admin.resources.index') }}" 
-           class="bg-green-500 hover:bg-green-600 text-white p-6 rounded-lg shadow-md text-center transition">
-            <div class="text-3xl mb-2">🎱</div>
-            <div class="font-semibold text-lg">Управление столами</div>
-        </a>
-    </div>
 </div>

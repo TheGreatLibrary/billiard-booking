@@ -169,11 +169,18 @@
             </div>
 
             <!-- Действия -->
-            <div class="w-full text-right">
+            <div class="w-full text-right space-y-2">
                 @if(($booking->payment_status ?? '') === 'pending' && in_array($booking->status ?? '', ['pending', 'confirmed']))
+                    <a href="{{ route('booking.pay', $booking->id) }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-white text-sm rounded-lg transition-colors font-medium w-full justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                        Оплатить {{ number_format($booking->total_amount ?? 0, 0, '', ' ') }} ₽
+                    </a>
                     <button wire:click="cancelBooking({{ $booking->id }})"
                             wire:confirm="Вы уверены, что хотите отменить это бронирование?"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm rounded-lg transition-colors font-medium">
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white text-sm rounded-lg transition-colors font-medium w-full justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>

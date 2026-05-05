@@ -44,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', UserDashboard::class)->name('dashboard');
     Route::get('/profile', Profile::class)->name('profile');
     Route::get('/booking', BookingCreate::class)->name('booking.create.auth');
+    Route::get('/booking/{booking}/pay', \App\Livewire\BookingPayment::class)->name('booking.pay');
     
     Route::patch('profile', function (Request $request) {
         // ... ваш код
@@ -112,5 +113,3 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/places/create', PlaceFormCreate::class)->name('places.form.create');
     Route::get('/places/{place}/edit', PlaceFormEdit::class)->name('places.form.edit');
 });
-
-

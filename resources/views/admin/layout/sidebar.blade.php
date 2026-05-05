@@ -1,5 +1,5 @@
 <!-- Sidebar -->
-<div class="w-64 bg-gray-900 text-white flex flex-col h-screen">
+<div class="w-64 bg-gray-900 text-white flex flex-col sticky top-0 h-screen">
     <!-- Header -->
     <div class="p-6 border-b border-gray-700 flex-shrink-0">
         <div class="flex items-center space-x-3">
