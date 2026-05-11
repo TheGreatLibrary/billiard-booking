@@ -4,7 +4,8 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Booking;
-use Illuminate\Support\Facades\Auth;
+use App\Mail\BookingCancelled;
+use Illuminate\Support\Facades\{Auth, Mail};
 
 class UserDashboard extends Component
 {
@@ -76,6 +77,17 @@ class UserDashboard extends Component
             'payment_status' => 'canceled',
         ]);
 
+        // Отправляем email об отмене
+        $email = $booking->guest_email ?? $booking->user?->email;
+        if ($email) {
+            try {
+                $booking->loadMissing(['slots', 'place', 'user']);
+                Mail::to($email)->send(new BookingCancelled($booking, 'canceled'));
+            } catch (\Exception $e) {
+                \Log::warning("Cancel email failed for booking #{$booking->id}: " . $e->getMessage());
+            }
+        }
+
         session()->flash('success', 'Бронирование отменено');
         
         $this->loadStats();
@@ -84,7 +96,7 @@ class UserDashboard extends Component
 
     public function render()
     {
-        return view('livewire.User.user-dashboard') // ✅ ИСПРАВЛЕНО: User → user (lowercase)
+        return view('livewire.User.user-dashboard') //
             ->layout('layouts.app')
             ->title('Личный кабинет');
     }

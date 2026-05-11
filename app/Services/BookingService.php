@@ -102,6 +102,11 @@ class BookingService
             
             $isAvailable = !in_array($time, $bookedSlots);
             
+            // Слоты в прошлом недоступны
+            if ($isAvailable && $slotDateTime->lte(Carbon::now())) {
+                $isAvailable = false;
+            }
+            
             $price = 0;
             if ($isAvailable) {
                 $slotStart = $slotDateTime->copy();

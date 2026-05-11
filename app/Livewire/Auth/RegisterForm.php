@@ -4,9 +4,9 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
+use App\Mail\WelcomeRegistration;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\{Auth, Hash, Mail};
 use Illuminate\Validation\Rules;
 use Livewire\Component;
 
@@ -54,6 +54,13 @@ class RegisterForm extends Component
         $validated['password'] = Hash::make($validated['password']);
 
         event(new Registered($user = User::create($validated)));
+
+        // Отправляем приветственное письмо
+        try {
+            Mail::to($user->email)->send(new WelcomeRegistration($user));
+        } catch (\Exception $e) {
+            \Log::warning("Welcome email failed for user #{$user->id}: " . $e->getMessage());
+        }
 
         Auth::login($user);
 

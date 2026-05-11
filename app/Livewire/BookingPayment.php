@@ -5,7 +5,8 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Booking;
 use App\Services\BookingService;
-use Illuminate\Support\Facades\Auth;
+use App\Mail\BookingCancelled;
+use Illuminate\Support\Facades\{Auth, Mail};
 
 class BookingPayment extends Component
 {
@@ -46,6 +47,17 @@ class BookingPayment extends Component
             'status' => 'canceled',
             'payment_status' => 'canceled',
         ]);
+
+        $email = $this->booking->guest_email ?? $this->booking->user?->email;
+        if ($email) {
+            try {
+                $this->booking->loadMissing(['slots', 'place', 'user']);
+                Mail::to($email)->send(new BookingCancelled($this->booking, 'canceled'));
+            } catch (\Exception $e) {
+                \Log::warning("Cancel email failed for booking #{$this->booking->id}: " . $e->getMessage());
+            }
+        }
+
         session()->flash('success', 'Бронирование отменено.');
         return redirect()->route('dashboard');
     }
